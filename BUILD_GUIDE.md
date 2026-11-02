@@ -172,4 +172,4 @@ Provide owner-controlled switches to disable AI calls, new live demos and outbou
 5. A deck explains problem, product, why Portaldot matters, proof, limitations and follow-on plan. No fabricated users/revenue/results.
 6. Submit the event form early, before the conservative deadline. Confirm any late eligibility issue directly with organisers. After code freeze, follow event rules and report any serious necessary fix.
 
-**Current state:** none of these implementation tasks, commits, deployments, test results, artefacts, videos or submissions have happened merely because they are described here.
+**Current state (2 Nov 2026):** The repository, public web app, local reference model, CLI, Solidity teaching fixtures and pitch deck exist. Vercel API routes now provide a disabled-by-default Privy/Groq proposal gateway and read-only receipt verification; those routes still need credentials, shared storage and live RPC verification. No Base Sepolia or Portaldot V3 demo contract or receipt is published. The timed submission video and final DoraHacks submission remain open.

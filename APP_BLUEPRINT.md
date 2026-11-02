@@ -293,4 +293,4 @@ Free services can change, require verification, or throttle. Add monitoring and 
 
 The implementation sequence, deadlines, risk gates and verification plan are in `BUILD_GUIDE.md`; evidence and submission checklist are in `SUBMISSION_CHECKLIST.md`; dated links and unresolved assumptions are in `RESEARCH_AND_DECISIONS.md`.
 
-**Planning approval gate:** The next permissible step is the user's explicit approval of the plan or requested revisions. No source files, package manifest, executable migration, deployment, or transaction should be created before then.
+**Approval state:** The owner has since explicitly authorized implementation, GitHub push and Vercel deployment. Live public-chain transactions remain gated on verified testnet support and a user-confirmed wallet signature; do not use personal keys or fabricate receipts.

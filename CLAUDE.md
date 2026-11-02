@@ -1,6 +1,6 @@
 # Vareq — Project Working Rules
 
-> **Current approval state: PLANNING ONLY.** The owner has not authorised project implementation. Do not create source code, package manifests, runnable migrations, workflows, contracts, deployments, or transactions until the owner explicitly approves. Reading/revising the planning documents is allowed. When approval is given, record the decision and its scope accurately; never infer approval from this file's existence.
+> **Current owner direction:** Project implementation, GitHub push, and Vercel deployment are authorized. Keep public claims aligned with observed evidence. Do not add or use a wallet private key in the browser, API, GitHub, or Vercel; use a user-confirmed testnet wallet flow and verified test-only contract addresses. A live testnet action still requires a valid test-only account, verified network route, and the user's wallet signature.
 
 These rules guide future contributors/agents and do not override newer explicit owner instructions or higher-priority instructions. Start by reading `APP_BLUEPRINT.md`, `FRONTEND_SPEC.md`, `BUILD_GUIDE.md`, `SUBMISSION_CHECKLIST.md`, and `RESEARCH_AND_DECISIONS.md`. Inspect what actually exists; a planned component, command, result or deployment is not evidence it exists.
 

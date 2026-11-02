@@ -1,6 +1,6 @@
 # Vareq — Hackathon Submission & Evidence Checklist
 
-**Current state: planning only.** None of the boxes below is complete unless the owner actually performs and verifies the work. No code, repository, deployed contracts, receipts, demo, video or deck has been created by this planning exercise.
+**Current status (2 Nov 2026):** The product repository, public Vercel app, local reference-model demo and pitch deck exist. The hosted AI and receipt-reading endpoints are implemented but remain disabled pending credentials, shared storage and live RPC checks. No testnet contract deployment or public transaction receipt is verified, and the final video and event submission remain open. Check a box only after its evidence is actually verified.
 
 ## 1. Immediate organiser questions
 

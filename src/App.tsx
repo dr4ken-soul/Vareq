@@ -1,18 +1,27 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
-import { useCreateWallet, usePrivy, useWallets } from "@privy-io/react-auth";
+import { useCreateWallet, useIdentityToken, usePrivy, useWallets } from "@privy-io/react-auth";
 import scenario from "../scenarios/refund-fill-race.json";
 import patchedRunJson from "./data/published/patched-refund-fill-race.json";
 import vulnerableRunJson from "./data/published/vulnerable-refund-fill-race.json";
 import { assertSupportedArtifact, createArtifact, executeReferenceModel, type RunArtifact, type RunResult } from "../packages/core/src";
+import type { Scenario } from "../packages/core/src/schema";
 import { EvidenceTag } from "./components/EvidenceTag";
 
 const primary = "button button-primary";
 const secondary = "button button-secondary";
 const textLink = "text-link";
 const privyConfigured = Boolean(import.meta.env.VITE_PRIVY_APP_ID?.trim());
+const aiEnabled = import.meta.env.VITE_ENABLE_AI === "true";
+const testnetEnabled = import.meta.env.VITE_ENABLE_TESTNET === "true";
 const publishedRuns: RunArtifact[] = [vulnerableRunJson, patchedRunJson] as unknown as RunArtifact[];
 publishedRuns.forEach((artifact) => assertSupportedArtifact(artifact));
+
+async function readApiResponse<T>(response: Response): Promise<T> {
+  const payload = await response.json().catch(() => ({})) as { error?: string } & T;
+  if (!response.ok) throw new Error(payload.error || "The request could not be completed.");
+  return payload;
+}
 
 function useMotionReveals() {
   useEffect(() => {
@@ -213,12 +222,18 @@ function Dialog({ children, onClose, titleId }: { children: React.ReactNode; onC
 }
 
 function PrivyRunner({ onClose }: { onClose: () => void }) {
-  const { ready, authenticated, login, linkWallet, user } = usePrivy();
+  const { ready, authenticated, login, linkWallet, user, getAccessToken } = usePrivy();
+  const { identityToken } = useIdentityToken();
   const { createWallet } = useCreateWallet();
   const { wallets } = useWallets();
   const [results, setResults] = useState<Array<{ result: RunResult; artifact: RunArtifact }> | null>(null);
   const [error, setError] = useState("");
   const [walletAction, setWalletAction] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiConsent, setAiConsent] = useState(false);
+  const [proposal, setProposal] = useState<Scenario | null>(null);
+  const [proposalModel, setProposalModel] = useState("");
+  const activeScenario = proposal ?? scenario as unknown as Scenario;
   const chooseExternalWallet = async () => {
     setError("");
     setWalletAction(true);
@@ -236,10 +251,56 @@ function PrivyRunner({ onClose }: { onClose: () => void }) {
   const run = async () => {
     setError("");
     try {
-      const vulnerable = await executeReferenceModel(scenario, "vulnerable");
-      const patched = await executeReferenceModel({ ...scenario, fixtureId: "reference-patched-v1" }, "patched");
+      const vulnerable = await executeReferenceModel(activeScenario, "vulnerable");
+      const patched = await executeReferenceModel({ ...activeScenario, fixtureId: "reference-patched-v1" }, "patched");
       setResults([{ result: vulnerable, artifact: await createArtifact(vulnerable, "browser-model") }, { result: patched, artifact: await createArtifact(patched, "browser-model") }]);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "The model run could not be completed."); }
+  };
+  const generateProposal = async () => {
+    setError("");
+    if (!aiConsent) {
+      setError("Review and accept the Groq data notice before requesting a proposal.");
+      return;
+    }
+    const wallet = wallets.find((item) => item.type === "ethereum");
+    if (!wallet) {
+      setError("Connect an Ethereum wallet before requesting an AI proposal.");
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken || !identityToken) throw new Error("Refresh your Privy session and try again.");
+      const requestBody = { walletAddress: wallet.address, scenario };
+      const authHeaders = {
+        authorization: "Bearer " + accessToken,
+        "x-privy-identity-token": identityToken,
+        "content-type": "application/json",
+      };
+      const challengeResponse = await fetch("/api/wallet-challenges", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify(requestBody),
+      });
+      const challenge = await readApiResponse<{ challengeId: string; message: string }>(challengeResponse);
+      const signature = await wallet.sign(challenge.message);
+      const proposalResponse = await fetch("/api/scenarios", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ challengeId: challenge.challengeId, signature, scenario }),
+      });
+      const data = await readApiResponse<{
+        scenario: Scenario;
+        provenance: { provider: string; model: string; origin: "ai"; validated: boolean };
+      }>(proposalResponse);
+      setProposal(data.scenario);
+      setProposalModel(data.provenance.provider + " · " + data.provenance.model);
+      setResults(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The AI proposal could not be completed.");
+    } finally {
+      setAiBusy(false);
+    }
   };
   const exportArtifact = (artifact: RunArtifact) => {
     const blob = new Blob([JSON.stringify(artifact, null, 2)], { type: "application/json" });
@@ -261,10 +322,15 @@ function PrivyRunner({ onClose }: { onClose: () => void }) {
       {error && <p className="field-error" role="alert">{error}</p>}
     </> : <>
       <p className="small-note">Connected wallet: <span className="mono">{wallets[0]?.address}</span>{user ? " · authenticated" : ""}</p>
+      {aiEnabled ? <>
+        <label className="ai-consent"><input type="checkbox" checked={aiConsent} onChange={(event) => setAiConsent(event.target.checked)} /><span>I agree to send this bounded, curated scenario to Groq for an AI proposal. The proposal is untrusted data and will not be run until I choose the local model action.</span></label>
+        <button className={secondary} onClick={generateProposal} type="button" disabled={!aiConsent || aiBusy}>{aiBusy ? "Requesting signed proposal…" : "Generate a bounded AI proposal"}</button>
+      </> : <p className="small-note ai-status">AI proposals are implemented but remain disabled until the Vercel Privy, Groq, and atomic Redis settings are present and verified.</p>}
+      {proposal && <p className="small-note">Validated AI proposal · {proposalModel} · Review its actions before running.</p>}
       {!results ? <button className={primary} onClick={run} type="button">Run same scenario in both models</button> : <div className="run-results">
         {results.map(({ result, artifact }) => <article className="result-card" key={result.fixture}>
           <div className="result-heading"><h3>{result.fixture === "vulnerable" ? "Vulnerable fixture" : "Patched fixture"}</h3><EvidenceTag kind={result.invariants[0].status === "violation" ? "error" : "success"}>{result.invariants[0].status === "violation" ? "Violation" : "Passed within tested bounds"}</EvidenceTag></div>
-          <p className="result-summary">{result.invariants[0].reason}</p><p className="small-note">Mode: Local reference model · Origin: Curated · 7 attempted actions</p>
+          <p className="result-summary">{result.invariants[0].reason}</p><p className="small-note">Mode: Browser reference model · Origin: {artifact.origin} · {result.trace.length} attempted actions</p>
           <ol className="result-trace">{result.trace.map((step) => <li key={step.stepId}><span className="mono">{step.stepId}</span><span>{step.kind}</span><EvidenceTag kind={step.status === "rejected" ? "warning" : "neutral"}>{step.status}</EvidenceTag></li>)}</ol>
           <button className={secondary} onClick={() => exportArtifact(artifact)} type="button">Export artefact</button>
         </article>)}
@@ -272,6 +338,58 @@ function PrivyRunner({ onClose }: { onClose: () => void }) {
       {error && <p className="field-error" role="alert">{error}</p>}
     </>}
   </Dialog>;
+}
+
+type ReceiptLookupResult = {
+  network: string;
+  chainId: number;
+  transactionHash: string;
+  status: "pending-or-not-found" | "success" | "reverted" | "unknown";
+  receipt: null | { blockNumber: string; blockHash: string | null; confirmations: string; from: string | null; to: string | null };
+  explorerUrl: string | null;
+  evidenceMode?: string;
+};
+
+function ReceiptLookup() {
+  const [network, setNetwork] = useState("base-sepolia");
+  const [transactionHash, setTransactionHash] = useState("");
+  const [result, setResult] = useState<ReceiptLookupResult | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const verify = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setResult(null);
+    setBusy(true);
+    try {
+      const params = new URLSearchParams({ network, txHash: transactionHash.trim() });
+      const response = await fetch("/api/testnet/receipts?" + params.toString());
+      setResult(await readApiResponse<ReceiptLookupResult>(response));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The receipt could not be checked.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return <section className="receipt-lookup surface" aria-labelledby="receipt-lookup-title">
+    <p className="eyebrow">PUBLIC TESTNET DATA</p>
+    <h2 id="receipt-lookup-title">Verify a transaction receipt</h2>
+    <p className="section-copy">This reads a submitted transaction from an allowlisted RPC and checks the network chain ID first. It does not send transactions or prove cross-chain finality.</p>
+    <form className="receipt-form" onSubmit={verify}>
+      <label>Network<select value={network} onChange={(event) => setNetwork(event.target.value)}><option value="base-sepolia">Base Sepolia</option><option value="portaldot-v3">Portaldot V3</option></select></label>
+      <label>Transaction hash<input required minLength={66} maxLength={66} pattern="0x[a-fA-F0-9]{64}" value={transactionHash} onChange={(event) => setTransactionHash(event.target.value)} spellCheck={false} autoComplete="off" placeholder="0x…" /></label>
+      <button className={primary} type="submit" disabled={busy}>{busy ? "Checking receipt…" : "Verify receipt"}</button>
+    </form>
+    {error && <p className="field-error" role="alert">{error}</p>}
+    {result && <article className="receipt-result" aria-live="polite">
+      <div className="result-heading"><strong>{result.network === "base-sepolia" ? "Base Sepolia" : "Portaldot V3"} · chain {result.chainId}</strong><EvidenceTag kind={result.status === "success" ? "success" : result.status === "reverted" ? "error" : "warning"}>{result.status}</EvidenceTag></div>
+      <p className="small-note mono">{result.transactionHash}</p>
+      {result.receipt && <p className="small-note">Block {result.receipt.blockNumber} · {result.receipt.confirmations} observed confirmation(s) · {result.receipt.blockHash ?? "block hash unavailable"}</p>}
+      {result.explorerUrl && <a className={textLink} href={result.explorerUrl} target="_blank" rel="noreferrer">Open explorer receipt <span aria-hidden="true">↗</span></a>}
+    </article>}
+  </section>;
 }
 
 function RunList() {
@@ -292,6 +410,10 @@ function RunList() {
         </article>;
       })}</section>
       <p className="small-note published-run-note">These examples are local model executions. They are not testnet receipts or proof about a deployed bridge.</p>
+      {testnetEnabled ? <ReceiptLookup /> : <section className="receipt-lookup surface" aria-labelledby="receipt-lookup-title">
+        <p className="eyebrow">TESTNET EVIDENCE</p><h2 id="receipt-lookup-title">Receipt lookup is waiting for live verification</h2>
+        <p className="section-copy">The read-only receipt endpoint is implemented, but this feature remains off until the configured RPCs identify as their documented testnets and an actual test contract and interaction have been verified.</p>
+      </section>}
     </main><Footer />
     {showRunner && (privyConfigured ? <PrivyRunner onClose={close} /> : <Dialog onClose={close} titleId="runner-title">
       <p className="eyebrow">BOUNDED INTERACTIVE DEMO</p><h2 id="runner-title">Wallet setup required</h2>
