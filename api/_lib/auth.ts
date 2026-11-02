@@ -1,5 +1,5 @@
 import { PrivyClient } from "@privy-io/node";
-import { ApiError } from "./http";
+import { ApiError } from "./http.js";
 
 type PrivyIdentity = {
   id?: string;

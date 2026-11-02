@@ -1,5 +1,5 @@
-import { ScenarioSchema, validateScenario, type Scenario } from "../../packages/core/src/schema.ts";
-import { ApiError } from "./http";
+import { ScenarioSchema, validateScenario, type Scenario } from "../../packages/core/src/schema.js";
+import { ApiError } from "./http.js";
 
 const actionKinds = [
   "LOCK",

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { getAllowedOrigin, handleOptions, jsonResponse, errorResponse, methodNotAllowed, readJson, ApiError } from "./_lib/http";
-import { requireLinkedWallet, verifyPrivySession } from "./_lib/auth";
-import { putChallenge } from "./_lib/redis";
-import { parseProposalInput, scenarioDigest } from "./_lib/scenario";
+import { getAllowedOrigin, handleOptions, jsonResponse, errorResponse, methodNotAllowed, readJson, ApiError } from "./_lib/http.js";
+import { requireLinkedWallet, verifyPrivySession } from "./_lib/auth.js";
+import { putChallenge } from "./_lib/redis.js";
+import { parseProposalInput, scenarioDigest } from "./_lib/scenario.js";
 
 const Input = z.object({
   walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/),

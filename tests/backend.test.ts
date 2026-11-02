@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import challengeRoute from "./wallet-challenges";
-import receiptRoute from "./testnet/receipts";
-import { proposeWithGroq } from "./_lib/scenario";
-import { validateScenario, type Scenario } from "../packages/core/src/schema";
+import challengeRoute from "../api/wallet-challenges.js";
+import receiptRoute from "../api/testnet/receipts.js";
+import { proposeWithGroq } from "../api/_lib/scenario.js";
+import { validateScenario, type Scenario } from "../packages/core/src/schema.js";
 import baseJson from "../scenarios/refund-fill-race.json";
 
 const base = validateScenario(baseJson) as Scenario;

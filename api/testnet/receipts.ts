@@ -1,4 +1,4 @@
-import { getAllowedOrigin, handleOptions, jsonResponse, errorResponse, methodNotAllowed, ApiError } from "../_lib/http";
+import { getAllowedOrigin, handleOptions, jsonResponse, errorResponse, methodNotAllowed, ApiError } from "../_lib/http.js";
 
 const networks = {
   "base-sepolia": {

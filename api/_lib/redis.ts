@@ -1,5 +1,5 @@
 import { Redis } from "@upstash/redis";
-import { ApiError } from "./http";
+import { ApiError } from "./http.js";
 
 let client: Redis | undefined;
 
