@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenarioId": "refund-fill-race-v1",
+  "title": "Delayed fill after a source refund",
+  "origin": "curated",
+  "seed": "41722",
+  "fixtureId": "reference-vulnerable-v1",
+  "adapterVersion": "1.0.0",
+  "refundAfterTick": 10,
+  "actions": [
+    { "id": "lock", "kind": "LOCK", "transferId": "transfer-001", "amount": "100", "tick": 0, "dependsOn": [] },
+    { "id": "fill-permit", "kind": "ISSUE_FILL_PERMIT", "transferId": "transfer-001", "tick": 1, "dependsOn": [{ "id": "lock", "when": "succeeded" }] },
+    { "id": "hold-delivery", "kind": "DELAY_DELIVERY", "transferId": "transfer-001", "tick": 2, "dependsOn": [{ "id": "fill-permit", "when": "attempted" }] },
+    { "id": "advance-time", "kind": "ADVANCE_LOGICAL_TIME", "toTick": 11, "tick": 11, "dependsOn": [{ "id": "hold-delivery", "when": "attempted" }] },
+    { "id": "request-refund", "kind": "REQUEST_REFUND", "transferId": "transfer-001", "tick": 11, "dependsOn": [{ "id": "advance-time", "when": "attempted" }] },
+    { "id": "deliver-fill", "kind": "DELIVER_FILL", "transferId": "transfer-001", "tick": 12, "dependsOn": [{ "id": "hold-delivery", "when": "attempted" }] },
+    { "id": "operator-claim", "kind": "CLAIM", "transferId": "transfer-001", "tick": 13, "dependsOn": [{ "id": "deliver-fill", "when": "attempted" }] }
+  ],
+  "hypothesis": "A destination fill permit held in flight may arrive after the source refund window opens."
+}

@@ -1,0 +1,38 @@
+{
+  "name": "vareq",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "@privy-io/react-auth": "3.51.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router-dom": "7.18.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "6.0.1",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "vitest": "4.0.15"
+  },
+  "overrides": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "vareq": "bun packages/cli/src/index.ts",
+    "demo:patched": "bun packages/cli/src/index.ts run --fixture patched --scenario scenarios/refund-fill-race.json --out work/patched-run.json",
+    "demo:vulnerable": "bun packages/cli/src/index.ts run --fixture vulnerable --scenario scenarios/refund-fill-race.json --out work/vulnerable-run.json"
+  }
+}
