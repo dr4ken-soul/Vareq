@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -22,6 +24,7 @@
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@vitejs/plugin-react": "6.0.1",
+    "solc": "0.8.24",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vite": "8.3.5",
@@ -39,6 +42,7 @@
     "test:watch": "vitest",
     "vareq": "bun packages/cli/src/index.ts",
     "demo:patched": "bun packages/cli/src/index.ts run --fixture patched --scenario scenarios/refund-fill-race.json --out work/patched-run.json",
-    "demo:vulnerable": "bun packages/cli/src/index.ts run --fixture vulnerable --scenario scenarios/refund-fill-race.json --out work/vulnerable-run.json"
+    "demo:vulnerable": "bun packages/cli/src/index.ts run --fixture vulnerable --scenario scenarios/refund-fill-race.json --out work/vulnerable-run.json",
+    "testnet:fixture": "bun scripts/deploy-testnet-fixture.ts"
   }
 }
