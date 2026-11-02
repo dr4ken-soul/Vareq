@@ -1,0 +1,237 @@
+{
+  "schemaVersion": "1.0.0",
+  "runId": "run-a2aad55733d5",
+  "title": "Delayed fill after a source refund",
+  "mode": "local-reference-model",
+  "origin": "curated",
+  "createdAt": "2026-11-02T18:46:21.046Z",
+  "inputDigest": "a2aad55733d5f837890a69925f2e4221e0902a797398c588d64f3259be343a55",
+  "schedulerVersion": "1.0.0",
+  "adapterVersion": "1.0.0",
+  "fixture": "vulnerable",
+  "seed": "41722",
+  "scenario": {
+    "schemaVersion": "1.0.0",
+    "scenarioId": "refund-fill-race-v1",
+    "title": "Delayed fill after a source refund",
+    "origin": "curated",
+    "seed": "41722",
+    "fixtureId": "reference-vulnerable-v1",
+    "adapterVersion": "1.0.0",
+    "refundAfterTick": 10,
+    "actions": [
+      {
+        "id": "lock",
+        "tick": 0,
+        "dependsOn": [],
+        "kind": "LOCK",
+        "transferId": "transfer-001",
+        "amount": "100"
+      },
+      {
+        "id": "fill-permit",
+        "tick": 1,
+        "dependsOn": [
+          {
+            "id": "lock",
+            "when": "succeeded"
+          }
+        ],
+        "kind": "ISSUE_FILL_PERMIT",
+        "transferId": "transfer-001"
+      },
+      {
+        "id": "hold-delivery",
+        "tick": 2,
+        "dependsOn": [
+          {
+            "id": "fill-permit",
+            "when": "attempted"
+          }
+        ],
+        "kind": "DELAY_DELIVERY",
+        "transferId": "transfer-001"
+      },
+      {
+        "id": "advance-time",
+        "tick": 11,
+        "dependsOn": [
+          {
+            "id": "hold-delivery",
+            "when": "attempted"
+          }
+        ],
+        "kind": "ADVANCE_LOGICAL_TIME",
+        "toTick": 11
+      },
+      {
+        "id": "request-refund",
+        "tick": 11,
+        "dependsOn": [
+          {
+            "id": "advance-time",
+            "when": "attempted"
+          }
+        ],
+        "kind": "REQUEST_REFUND",
+        "transferId": "transfer-001"
+      },
+      {
+        "id": "deliver-fill",
+        "tick": 12,
+        "dependsOn": [
+          {
+            "id": "hold-delivery",
+            "when": "attempted"
+          }
+        ],
+        "kind": "DELIVER_FILL",
+        "transferId": "transfer-001"
+      },
+      {
+        "id": "operator-claim",
+        "tick": 13,
+        "dependsOn": [
+          {
+            "id": "deliver-fill",
+            "when": "attempted"
+          }
+        ],
+        "kind": "CLAIM",
+        "transferId": "transfer-001"
+      }
+    ],
+    "hypothesis": "A destination fill permit held in flight may arrive after the source refund window opens."
+  },
+  "trace": [
+    {
+      "stepId": "step-01",
+      "logicalTick": 0,
+      "actionId": "lock",
+      "actor": "user",
+      "kind": "LOCK",
+      "status": "succeeded",
+      "summary": "User locked 100 reference units.",
+      "state": {
+        "locked": true,
+        "sourceRefunded": false,
+        "destinationFilled": false,
+        "operatorReimbursed": false
+      }
+    },
+    {
+      "stepId": "step-02",
+      "logicalTick": 0,
+      "actionId": "fill-permit",
+      "actor": "coordinator",
+      "kind": "ISSUE_FILL_PERMIT",
+      "status": "succeeded",
+      "summary": "Coordinator issued a destination fill permit.",
+      "state": {
+        "locked": true,
+        "sourceRefunded": false,
+        "destinationFilled": false,
+        "operatorReimbursed": false
+      }
+    },
+    {
+      "stepId": "step-03",
+      "logicalTick": 0,
+      "actionId": "hold-delivery",
+      "actor": "coordinator",
+      "kind": "DELAY_DELIVERY",
+      "status": "succeeded",
+      "summary": "Fill permit delivery is held until a later logical tick.",
+      "state": {
+        "locked": true,
+        "sourceRefunded": false,
+        "destinationFilled": false,
+        "operatorReimbursed": false
+      }
+    },
+    {
+      "stepId": "step-04",
+      "logicalTick": 11,
+      "actionId": "advance-time",
+      "actor": "scheduler",
+      "kind": "ADVANCE_LOGICAL_TIME",
+      "status": "succeeded",
+      "summary": "Logical time advanced to tick 11.",
+      "state": {
+        "locked": true,
+        "sourceRefunded": false,
+        "destinationFilled": false,
+        "operatorReimbursed": false
+      }
+    },
+    {
+      "stepId": "step-05",
+      "logicalTick": 11,
+      "actionId": "request-refund",
+      "actor": "user",
+      "kind": "REQUEST_REFUND",
+      "status": "succeeded",
+      "summary": "Source refund completed.",
+      "state": {
+        "locked": true,
+        "sourceRefunded": true,
+        "destinationFilled": false,
+        "operatorReimbursed": false
+      }
+    },
+    {
+      "stepId": "step-06",
+      "logicalTick": 11,
+      "actionId": "deliver-fill",
+      "actor": "operator",
+      "kind": "DELIVER_FILL",
+      "status": "succeeded",
+      "summary": "Destination fill completed using the previously issued permit.",
+      "state": {
+        "locked": true,
+        "sourceRefunded": true,
+        "destinationFilled": true,
+        "operatorReimbursed": false
+      }
+    },
+    {
+      "stepId": "step-07",
+      "logicalTick": 11,
+      "actionId": "operator-claim",
+      "actor": "operator",
+      "kind": "CLAIM",
+      "status": "rejected",
+      "summary": "Source already refunded; operator reimbursement failed.",
+      "state": {
+        "locked": true,
+        "sourceRefunded": true,
+        "destinationFilled": true,
+        "operatorReimbursed": false
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "no-double-settlement",
+      "status": "violation",
+      "reason": "The source refunded the transfer and the destination also filled it.",
+      "supportingStepIds": [
+        "step-05",
+        "step-06",
+        "step-07"
+      ]
+    }
+  ],
+  "completion": "complete",
+  "terminal": {
+    "sourceRefunded": true,
+    "destinationFilled": true,
+    "operatorReimbursed": false
+  },
+  "evidence": [],
+  "limitations": [
+    "This is a bounded reference-model execution, not EVM execution or a public-testnet transaction.",
+    "The patched outcome assumes a single coordinator durably records one decision per transfer and never equivocates.",
+    "Passing this scenario is not an audit, formal proof, or guarantee that a bridge is safe."
+  ]
+}

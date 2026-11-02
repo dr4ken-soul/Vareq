@@ -84,4 +84,3 @@ See the product blueprint (APP_BLUEPRINT.md), build sequence (BUILD_GUIDE.md), f
 ## Licence
 
 Vareq-authored code is offered under the MIT License in LICENSE. Dependency licences remain governed by their respective projects.
-
