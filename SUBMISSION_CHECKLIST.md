@@ -1,6 +1,6 @@
 # Vareq — Hackathon Submission & Evidence Checklist
 
-**Current status (2 Nov 2026):** The product repository, public Vercel app, local reference-model demo and pitch deck exist. The hosted AI and receipt-reading endpoints are implemented but remain disabled pending credentials, shared storage and live RPC checks. No testnet contract deployment or public transaction receipt is verified, and the final video and event submission remain open. Check a box only after its evidence is actually verified.
+**Current status (3 Nov 2026):** The public repository, Vercel app, local reference model and pitch deck exist. Production testnet receipt lookup is enabled and the Portaldot V3 RPC/receipt path has passed preflight, but no fixture contract or public transaction receipt has been produced because the deployer has no test gas. The local role-aware fixture now requires separate deployer/user, operator and attester test accounts; the operator also needs gas. Hosted AI remains disabled until Upstash REST credentials are added and the authenticated flow is verified. The final video and event submission remain open. Check a box only after its evidence is actually verified.
 
 ## 1. Immediate organiser questions
 

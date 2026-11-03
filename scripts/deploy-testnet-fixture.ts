@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,14 +8,15 @@ import {
   createWalletClient,
   defineChain,
   http,
-  type Address,
+  keccak256,
+  stringToHex,
+  type Abi,
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const fixturePath = resolve(projectRoot, "contracts/src/ReferenceRaceFixture.sol");
-const operatorAddress = "0x000000000000000000000000000000000000dEaD" as Address;
+const fixturePath = resolve(projectRoot, "contracts/src/TestnetRoleFixture.sol");
 const networks = {
   "base-sepolia": {
     chainId: 84_532,
@@ -27,7 +29,7 @@ const networks = {
   "portaldot-v3": {
     chainId: 420_420_777,
     name: "Portaldot V3 Testnet",
-    currency: { name: "Portaldot test token", symbol: "POT", decimals: 18 },
+    currency: { name: "tPOTv3", symbol: "tPOT", decimals: 14 },
     rpcEnv: "PORTALDOT_V3_EVM_RPC_URL",
     rpcHost: "test-evm-rpc-v3.portaldot.dev",
     explorerTx: null,
@@ -71,11 +73,19 @@ function rpcUrlFor(networkName: NetworkName): string {
   return value;
 }
 
-async function compileFixture() {
+function readPrivateKey(name: string): Hex {
+  const value = process.env[name]?.trim();
+  if (!value || !/^0x[0-9a-fA-F]{64}$/.test(value)) {
+    fail(`set ${name} in the ignored local .env as a 0x-prefixed 32-byte test-only key; signing keys are never read from Vercel`);
+  }
+  return value as Hex;
+}
+
+async function compileFixture(): Promise<{ abi: Abi; bytecode: Hex }> {
   const source = await readFile(fixturePath, "utf8");
   const input = {
     language: "Solidity",
-    sources: { "ReferenceRaceFixture.sol": { content: source } },
+    sources: { "TestnetRoleFixture.sol": { content: source } },
     settings: {
       optimizer: { enabled: true, runs: 200 },
       outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } },
@@ -90,12 +100,9 @@ async function compileFixture() {
   };
   const errors = output.errors?.filter((entry) => entry.severity === "error") ?? [];
   if (errors.length) fail(`Solidity compilation failed: ${errors.map((entry) => entry.formattedMessage).join("\n")}`);
-  const artifact = output.contracts?.["ReferenceRaceFixture.sol"]?.ReferenceRaceFixture;
+  const artifact = output.contracts?.["TestnetRoleFixture.sol"]?.TestnetRoleFixture;
   if (!artifact?.evm.bytecode.object || !artifact.abi) fail("the Solidity compiler returned no fixture artifact");
-  return {
-    abi: artifact.abi,
-    bytecode: `0x${artifact.evm.bytecode.object}` as Hex,
-  };
+  return { abi: artifact.abi as Abi, bytecode: `0x${artifact.evm.bytecode.object}` as Hex };
 }
 
 async function main() {
@@ -125,96 +132,149 @@ async function main() {
       params: [`0x${"0".repeat(64)}`],
     }),
   });
-  const receiptProbe = await receiptProbeResponse.json() as {
-    result?: unknown;
-    error?: { message?: string };
-  };
+  const receiptProbe = await receiptProbeResponse.json() as { result?: unknown; error?: { message?: string } };
   if (!receiptProbeResponse.ok || receiptProbe.error || receiptProbe.result !== null) {
     fail(`${config.name} RPC did not return a valid not-found result for receipt lookup`);
   }
   const fixture = await compileFixture();
   console.log(`RPC verified: ${config.name} (chain ${actualChainId}, block ${currentBlock})`);
   console.log("Read-only transaction-receipt lookup verified (unknown transaction returns no receipt).");
-  console.log(`Fixture compiled with solc ${solc.version()}. It has no token, bridge, or real-asset functionality.`);
+  console.log(`Role fixture compiled with solc ${solc.version()}.`);
+  console.log("This valueless, single-chain fixture does not transfer real assets or verify another chain.");
 
   if (!broadcast) {
-    console.log("Read-only preflight complete. Re-run with --broadcast only when you want to send the two testnet transactions.");
+    console.log("Read-only preflight complete. Broadcasting requires three distinct test-only keys; deployer/user and operator also need gas.");
     return;
   }
 
-  const rawKey = process.env.TESTNET_DEPLOYER_PRIVATE_KEY?.trim();
-  if (!rawKey || !/^0x[0-9a-fA-F]{64}$/.test(rawKey)) {
-    fail("set TESTNET_DEPLOYER_PRIVATE_KEY in the ignored local .env as a 0x-prefixed 32-byte key; it is never read from Vercel");
+  const deployer = privateKeyToAccount(readPrivateKey("TESTNET_DEPLOYER_PRIVATE_KEY"));
+  const operator = privateKeyToAccount(readPrivateKey("OPERATOR_PRIVATE_KEY"));
+  const attester = privateKeyToAccount(readPrivateKey("ATTESTER_PRIVATE_KEY"));
+  const distinctRoles = new Set([
+    deployer.address.toLowerCase(),
+    operator.address.toLowerCase(),
+    attester.address.toLowerCase(),
+  ]);
+  if (distinctRoles.size !== 3) {
+    fail("deployer/user, operator, and attester must be three distinct test-only accounts");
   }
 
-  const account = privateKeyToAccount(rawKey as Hex);
-  const balance = await publicClient.getBalance({ address: account.address });
-  if (balance === 0n) fail(`the test signer ${account.address} has no native testnet gas token`);
-  const walletClient = createWalletClient({ account, chain, transport: http(rpcUrl, { timeout: 12_000 }) });
+  const [deployerBalance, operatorBalance] = await Promise.all([
+    publicClient.getBalance({ address: deployer.address }),
+    publicClient.getBalance({ address: operator.address }),
+  ]);
+  if (deployerBalance === 0n) fail(`the deployer/user ${deployer.address} has no native testnet gas token`);
+  if (operatorBalance === 0n) fail(`the operator ${operator.address} has no native testnet gas token`);
 
-  console.log(`Test signer: ${account.address}`);
-  console.log("Deploying the patched educational fixture; this sends real testnet transactions and consumes testnet gas only.");
-  const deploymentHash = await walletClient.deployContract({
+  const deployerClient = createWalletClient({ account: deployer, chain, transport: http(rpcUrl, { timeout: 12_000 }) });
+  const operatorClient = createWalletClient({ account: operator, chain, transport: http(rpcUrl, { timeout: 12_000 }) });
+  const transferId = keccak256(stringToHex(`vareq:${networkName}:${Date.now()}:${randomUUID()}`));
+
+  console.log(`Testnet user/deployer: ${deployer.address}`);
+  console.log(`Testnet operator: ${operator.address}`);
+  console.log(`Testnet attester: ${attester.address}`);
+  console.log("Sending five testnet transactions for deployment, lock, permit, operator fill, and attested claim.");
+
+  const deploymentHash = await deployerClient.deployContract({
     abi: fixture.abi,
     bytecode: fixture.bytecode,
-    args: [account.address, operatorAddress, true, 1n],
-    account,
+    args: [deployer.address, operator.address, attester.address],
+    account: deployer,
     chain,
   });
   const deploymentReceipt = await publicClient.waitForTransactionReceipt({ hash: deploymentHash, timeout: 120_000 });
   if (deploymentReceipt.status !== "success" || !deploymentReceipt.contractAddress) {
     fail(`deployment transaction ${deploymentHash} did not produce a successful contract receipt`);
   }
+  const contractAddress = deploymentReceipt.contractAddress;
 
-  const lockHash = await walletClient.writeContract({
-    address: deploymentReceipt.contractAddress,
-    abi: fixture.abi,
-    functionName: "lock",
-    args: [1n],
-    account,
-    chain,
+  const lockHash = await deployerClient.writeContract({
+    address: contractAddress, abi: fixture.abi, functionName: "lock",
+    args: [transferId, 1n], account: deployer, chain,
   });
   const lockReceipt = await publicClient.waitForTransactionReceipt({ hash: lockHash, timeout: 120_000 });
-  if (lockReceipt.status !== "success") fail(`lock transaction ${lockHash} did not succeed`);
+  if (lockReceipt.status !== "success") fail(`user lock transaction ${lockHash} did not succeed`);
 
-  const [isLocked, units] = await Promise.all([
-    publicClient.readContract({ address: deploymentReceipt.contractAddress, abi: fixture.abi, functionName: "locked" }),
-    publicClient.readContract({ address: deploymentReceipt.contractAddress, abi: fixture.abi, functionName: "referenceUnits" }),
+  const permitMessageHash = await publicClient.readContract({
+    address: contractAddress, abi: fixture.abi, functionName: "fillPermitMessageHash", args: [transferId],
+  }) as Hex;
+  const permitSignature = await attester.signMessage({ message: { raw: permitMessageHash } });
+  const permitHash = await deployerClient.writeContract({
+    address: contractAddress, abi: fixture.abi, functionName: "issueFillPermit",
+    args: [transferId, permitSignature], account: deployer, chain,
+  });
+  const permitReceipt = await publicClient.waitForTransactionReceipt({ hash: permitHash, timeout: 120_000 });
+  if (permitReceipt.status !== "success") fail(`attested fill permit transaction ${permitHash} did not succeed`);
+
+  const fillHash = await operatorClient.writeContract({
+    address: contractAddress, abi: fixture.abi, functionName: "deliverFill",
+    args: [transferId], account: operator, chain,
+  });
+  const fillReceipt = await publicClient.waitForTransactionReceipt({ hash: fillHash, timeout: 120_000 });
+  if (fillReceipt.status !== "success") fail(`operator fill transaction ${fillHash} did not succeed`);
+
+  const fillMessageHash = await publicClient.readContract({
+    address: contractAddress, abi: fixture.abi, functionName: "fillAttestationMessageHash",
+    args: [transferId, fillHash],
+  }) as Hex;
+  const fillSignature = await attester.signMessage({ message: { raw: fillMessageHash } });
+  const claimHash = await operatorClient.writeContract({
+    address: contractAddress, abi: fixture.abi, functionName: "claim",
+    args: [transferId, fillHash, fillSignature], account: operator, chain,
+  });
+  const claimReceipt = await publicClient.waitForTransactionReceipt({ hash: claimHash, timeout: 120_000 });
+  if (claimReceipt.status !== "success") fail(`attested operator claim transaction ${claimHash} did not succeed`);
+
+  const [locked, fillPermit, destinationFilled, operatorReimbursed, referenceUnits] = await Promise.all([
+    publicClient.readContract({ address: contractAddress, abi: fixture.abi, functionName: "locked" }),
+    publicClient.readContract({ address: contractAddress, abi: fixture.abi, functionName: "fillPermit" }),
+    publicClient.readContract({ address: contractAddress, abi: fixture.abi, functionName: "destinationFilled" }),
+    publicClient.readContract({ address: contractAddress, abi: fixture.abi, functionName: "operatorReimbursed" }),
+    publicClient.readContract({ address: contractAddress, abi: fixture.abi, functionName: "referenceUnits" }),
   ]);
-  if (!isLocked || units !== 1n) fail("the deployed fixture did not report the expected locked reference state");
+  if (!locked || !fillPermit || !destinationFilled || !operatorReimbursed || referenceUnits !== 1n) {
+    fail("the deployed fixture did not report the expected attested role state");
+  }
 
+  const txEvidence = (hash: Hex, receipt: { blockNumber: bigint; blockHash: Hex; status: string }) => ({
+    transactionHash: hash,
+    blockNumber: receipt.blockNumber.toString(),
+    blockHash: receipt.blockHash,
+    status: receipt.status,
+    explorerUrl: config.explorerTx ? `${config.explorerTx}${hash}` : null,
+  });
   const evidence = {
     evidenceMode: "public-testnet",
-    note: "Real EVM testnet contract deployment and reference lock. This is a valueless single-chain fixture, not a cross-chain bridge or asset transfer.",
+    note: "Real single-chain EVM testnet transactions on a valueless fixture. The operator submits a fill and claim; an attester signs the permit and observed fill hash. This is not a cross-chain bridge, cross-chain verification, or asset transfer.",
     network: networkName,
     chainId: actualChainId,
-    signerAddress: account.address,
-    contractAddress: deploymentReceipt.contractAddress,
-    deployment: {
-      transactionHash: deploymentHash,
-      blockNumber: deploymentReceipt.blockNumber.toString(),
-      blockHash: deploymentReceipt.blockHash,
-      status: deploymentReceipt.status,
-      explorerUrl: config.explorerTx ? `${config.explorerTx}${deploymentHash}` : null,
+    transferId,
+    roles: {
+      userAndDeployerAddress: deployer.address,
+      operatorAddress: operator.address,
+      attesterAddress: attester.address,
     },
-    lock: {
-      referenceUnits: "1",
-      transactionHash: lockHash,
-      blockNumber: lockReceipt.blockNumber.toString(),
-      blockHash: lockReceipt.blockHash,
-      status: lockReceipt.status,
-      explorerUrl: config.explorerTx ? `${config.explorerTx}${lockHash}` : null,
+    contractAddress,
+    transactions: {
+      deployment: txEvidence(deploymentHash, deploymentReceipt),
+      userLock: txEvidence(lockHash, lockReceipt),
+      attestedPermit: txEvidence(permitHash, permitReceipt),
+      operatorFill: txEvidence(fillHash, fillReceipt),
+      attestedClaim: txEvidence(claimHash, claimReceipt),
     },
-    verifiedState: { locked: isLocked, referenceUnits: units.toString() },
+    verifiedState: { locked, fillPermit, destinationFilled, operatorReimbursed, referenceUnits: referenceUnits.toString() },
     createdAt: new Date().toISOString(),
   };
   const evidenceDirectory = resolve(projectRoot, "evidence/testnet");
   await mkdir(evidenceDirectory, { recursive: true });
-  const evidencePath = resolve(evidenceDirectory, `${networkName}-${deploymentHash.slice(2, 12)}.json`);
+  const evidencePath = resolve(projectRoot, `evidence/testnet/${networkName}-${deploymentHash.slice(2, 12)}.json`);
   await writeFile(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, { flag: "wx" });
   console.log(`Deployment receipt: ${deploymentHash}`);
-  console.log(`Lock receipt: ${lockHash}`);
-  console.log(`Verified locked state at ${deploymentReceipt.contractAddress}`);
+  console.log(`User lock receipt: ${lockHash}`);
+  console.log(`Attested permit receipt: ${permitHash}`);
+  console.log(`Operator fill receipt: ${fillHash}`);
+  console.log(`Attested claim receipt: ${claimHash}`);
+  console.log(`Verified role state at ${contractAddress}`);
   console.log(`Evidence saved without secrets to ${evidencePath}`);
 }
 

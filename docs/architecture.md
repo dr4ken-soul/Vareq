@@ -23,7 +23,7 @@ Two reviewed, sanitized `local-reference-model` artefacts are bundled in `src/da
 
 The scheduler ranks ready actions by SHA-256 over a versioned encoding of the seed, scenario ID, and action ID. Dependencies retain their explicit attempted or succeeded meaning. A fixed scenario with fixed inputs yields a stable semantic trace in the reference model.
 
-The current browser app does not claim model/EVM parity. The Solidity fixture has a separate implementation and must be tested independently. Its single-contract source/destination simplification is intentionally narrow. The Vercel testnet route observes receipts only; it does not submit transactions, operate signers, or attach evidence to a run.
+The current browser app does not claim model/EVM parity. The Solidity fixture has a separate implementation and must be tested independently. Its single-contract source/destination simplification is intentionally narrow. The Vercel testnet route observes receipts only; it does not submit transactions, operate signers, or attach evidence to a run. A separate local-only script can deploy a valueless, single-chain role fixture: the deployer/user locks one reference unit, an attester signs a permit and observed-fill attestation, and a separately funded operator submits fill and claim transactions. This is testnet integration evidence, not a cross-chain bridge or asset transfer.
 
 ## Explicit gaps before a live submission
 
