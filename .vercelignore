@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.vite/
+.vercel/
+.wrangler/
+.bun-install-cache/
+work/
+coverage/
+contracts/out/
+contracts/cache/
+*.log
