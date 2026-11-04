@@ -7,6 +7,7 @@ import vulnerableRunJson from "./data/published/vulnerable-refund-fill-race.json
 import { assertSupportedArtifact, createArtifact, executeReferenceModel, type RunArtifact, type RunResult } from "../packages/core/src";
 import type { Scenario } from "../packages/core/src/schema";
 import { EvidenceTag } from "./components/EvidenceTag";
+import LiveTestnetDemo from "./TestnetDemo";
 
 const primary = "button button-primary";
 const secondary = "button button-secondary";
@@ -65,7 +66,7 @@ function Header() {
     nodes.forEach((node) => observer.observe(node));
     return () => observer.disconnect();
   }, [location.pathname]);
-  const links = [["How it works", "/#how-it-works"], ["Evidence", "/#evidence"], ["Trust", "/#trust"], ["Inspector", "/app/runs"]];
+  const links: Array<[string, string]> = [["How it works", "/#how-it-works"], ["Evidence", "/#evidence"], ["Trust", "/#trust"], ["Inspector", "/app/runs"], ["Live testnet", "/app/testnet"]];
   return <>
     <a className="skip-link" href="#main-content">Skip to content</a>
     <header className="site-header"><div className="header-inner">
@@ -73,7 +74,7 @@ function Header() {
       <nav className="desktop-nav" aria-label="Main navigation">
         {links.map(([label, href]) => {
           const id = href.split("#")[1] || "";
-          const current = label === "Inspector" ? location.pathname.startsWith("/app/runs") : active === id || (!active && id === "how-it-works");
+          const current = label === "Inspector" ? location.pathname.startsWith("/app/runs") : label === "Live testnet" ? location.pathname === "/app/testnet" : active === id || (!active && id === "how-it-works");
           return <a key={label} className={"nav-link" + (current ? " active" : "")} href={href} aria-current={current ? "page" : undefined}>{label}</a>;
         })}
       </nav>
@@ -85,7 +86,7 @@ function Header() {
     {menuOpen && <>
       <button type="button" aria-label="Close navigation" className="mobile-backdrop" onClick={() => setMenuOpen(false)} />
       <nav id="mobile-navigation" data-mobile-menu className="mobile-menu" aria-label="Mobile navigation">
-        {links.map(([label, href]) => <a key={label} href={href} onClick={() => setMenuOpen(false)}>{label}</a>)}
+        {links.map(([label, href]) => href.startsWith("/app/") ? <Link key={label} to={href} onClick={() => setMenuOpen(false)}>{label}</Link> : <a key={label} href={href} onClick={() => setMenuOpen(false)}>{label}</a>)}
         <Link className={primary} to="/app/runs" onClick={() => setMenuOpen(false)}>Explore a test run</Link>
       </nav>
     </>}
@@ -99,6 +100,7 @@ function Footer() {
       <nav className="footer-links" aria-label="Footer navigation">
         <a className={textLink} href="/#how-it-works">How it works</a>
         <Link className={textLink} to="/app/runs">Inspector</Link>
+        <Link className={textLink} to="/app/testnet">Live testnet demo</Link>
         <a className={textLink} href="https://dorahacks.io/hackathon/portaldot-hacker-house-2026/detail" target="_blank" rel="noreferrer">Event</a>
       </nav>
     </div>
@@ -443,5 +445,5 @@ function NotFound() {
 }
 
 export default function App() {
-  return <><Header /><Routes><Route path="/" element={<LandingPage />} /><Route path="/app/runs" element={<RunList />} /><Route path="/app/runs/:runId" element={<RunDetail />} /><Route path="*" element={<NotFound />} /></Routes></>;
+  return <><Header /><Routes><Route path="/" element={<LandingPage />} /><Route path="/app/runs" element={<RunList />} /><Route path="/app/runs/:runId" element={<RunDetail />} /><Route path="/app/testnet" element={<><LiveTestnetDemo /><Footer /></>} /><Route path="*" element={<NotFound />} /></Routes></>;
 }

@@ -1,6 +1,6 @@
 # Vareq — Hackathon Submission & Evidence Checklist
 
-**Current status (3 Nov 2026):** The public repository, Vercel app, local reference model and pitch deck exist. Production testnet receipt lookup is enabled and the Portaldot V3 RPC/receipt path has passed preflight, but no fixture contract or public transaction receipt has been produced because the deployer has no test gas. The local role-aware fixture now requires separate deployer/user, operator and attester test accounts; the operator also needs gas. Hosted AI remains disabled until Upstash REST credentials are added and the authenticated flow is verified. The final video and event submission remain open. Check a box only after its evidence is actually verified.
+**Current status (4 Nov 2026):** The public repository, Vercel app, local reference model and pitch deck exist. Vercel's AI/testnet switches and required server credentials have been configured, but authenticated AI production behavior still needs end-to-end verification. The operator-assisted Base Sepolia → Portaldot V3 source/destination fixture and UI are implemented locally and compile; no contract has been deployed and no public transaction receipt exists. The local deployer value is not a valid EVM-key format, and operator/attester keys are blank, so deployment cannot yet be broadcast. The final video and event submission remain open. Check a box only after its evidence is actually verified.
 
 ## 1. Immediate organiser questions
 
@@ -10,7 +10,7 @@
 - [ ] Ask which V3 Solidity/Foundry/EVM or native deployment path is currently supported; how storage deposits, gas units, native/EVM decimals, network metadata and publicly inspectable transaction receipts should be checked.
 - [ ] Confirm whether a source-on-Base, destination-on-Portaldot test-only reference bridge is an appropriate Multi-Chain & Cross-Chain Infra demonstration.
 
-Official Discord: https://discord.gg/portaldot. Official event page: https://dorahacks.io/hackathon/portaldot-hacker-house-2026/detail. Send only public account addresses and registration information if required—**never a seed phrase or private key**.
+Official Discord: https://discord.gg/4tMWuXpG2U. Official event page: https://dorahacks.io/hackathon/portaldot-hacker-house-2026/detail. Send only public account addresses and registration information if required—**never a seed phrase or private key**.
 
 ### Suggested organiser message
 
