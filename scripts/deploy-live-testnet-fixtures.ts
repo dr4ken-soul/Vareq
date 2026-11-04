@@ -180,6 +180,14 @@ async function main() {
   const compiled = await compile();
   const src = compiled.TestnetSourceFixture;
   const dst = compiled.TestnetDestinationFixture;
+  if (!process.argv.slice(2).includes("--broadcast")) {
+    console.log("Preflight passed. No transactions were sent.");
+    console.log(`Base Sepolia chain ID: ${baseChainId}; Portaldot V3 chain ID: ${portaldotChainId}.`);
+    console.log("Four fixture deployments and two destination-binding transactions are ready.");
+    console.log("After reviewing the test-only signer accounts and gas balances, rerun with --broadcast to submit them.");
+    return;
+  }
+
   const manifest: Manifest = {
     schemaVersion: 1,
     evidenceMode: "public-testnet",

@@ -59,7 +59,11 @@ Compile/deploy and bind the vulnerable and patched fixture pairs:
 
     bun run testnet:deploy:crosschain
 
-The script verifies both RPC chain IDs, checks signer separation and gas balances, compiles the Solidity fixtures, and writes an ignored local manifest. It broadcasts only after those checks. Copy the two Base source addresses from `work/live-testnet-deployments.json` to `VITE_BASE_SEPOLIA_SOURCE_VULNERABLE_ADDRESS` and `VITE_BASE_SEPOLIA_SOURCE_PATCHED_ADDRESS`, then rebuild/redeploy the web app. A connected user can sign a bounded source lock on `/app/testnet`. The page displays a command for the manually operated authorization stage:
+The first command is a read-only preflight: it verifies both RPC chain IDs, checks signer separation and gas balances, and compiles the Solidity fixtures. It sends no transactions. After reviewing the test-only accounts and balances, explicitly broadcast the six deployment/binding transactions:
+
+    bun run testnet:deploy:crosschain --broadcast
+
+The script writes an ignored local manifest. Copy the two Base source addresses from `work/live-testnet-deployments.json` to `VITE_BASE_SEPOLIA_SOURCE_VULNERABLE_ADDRESS` and `VITE_BASE_SEPOLIA_SOURCE_PATCHED_ADDRESS`, then rebuild/redeploy the web app. A connected user can sign a bounded source lock on `/app/testnet`. The page displays a command for the manually operated authorization stage:
 
     bun run testnet:operator -- --stage authorize --mode patched --transfer-id 0x... --source-lock 0x... --approve
 
