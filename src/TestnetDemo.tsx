@@ -76,6 +76,16 @@ function ConnectedTestnetFlow() {
       settle: `bun run testnet:operator --stage settle --mode ${mode} --transfer-id ${transferId} --approve`,
     };
   }, [lockHash, mode, state?.exists, transferId]);
+  const nativeEvidenceCommands = useMemo(() => {
+    if (!transferId || !lockHash) return null;
+    const common = `--mode ${mode} --transfer-id ${transferId} --approve --broadcast`;
+    return {
+      deploy: `bun run testnet:portaldot-contract -- --stage deploy --mode ${mode} --approve --broadcast`,
+      attest: `bun run testnet:portaldot-contract -- --stage attest ${common} --source-transaction ${lockHash}`,
+      refund: refundHash && state?.refunded ? `bun run testnet:portaldot-contract -- --stage refund ${common} --refund-transaction ${refundHash}` : null,
+      fill: `bun run testnet:portaldot-contract -- --stage fill ${common}`,
+    };
+  }, [lockHash, mode, refundHash, state?.refunded, transferId]);
 
   const refreshState = async () => {
     if (!sourceAddress || !transferId) return;
@@ -168,7 +178,7 @@ function ConnectedTestnetFlow() {
 
   return <main id="main-content" className="inspector-main container live-testnet-main">
     <nav className="breadcrumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span aria-hidden="true">/</span><span aria-current="page">Live testnet</span></nav>
-    <div className="inspector-title-row"><div><p className="eyebrow">OPERATOR-ASSISTED TESTNET</p><h1>Base Sepolia → Portaldot V3</h1><p>Sign the source action with your connected wallet. The operator and attester perform separately signed transactions through the local CLI.</p></div><EvidenceTag kind={testnetEnabled && sourceAddress ? "warning" : "neutral"}>{!testnetEnabled ? "Live actions disabled" : sourceAddress ? "Live actions enabled" : "Contracts not deployed"}</EvidenceTag></div>
+    <div className="inspector-title-row"><div><p className="eyebrow">OPERATOR-ASSISTED TESTNET</p><h1>Base Sepolia → Portaldot V3</h1><p>The source uses Base Sepolia EVM receipts. The native destination uses Portaldot's Substrate contracts pallet and SS58 operator and attester accounts. The existing Portaldot EVM fixture remains a separate route.</p></div><EvidenceTag kind={testnetEnabled && sourceAddress ? "warning" : "neutral"}>{!testnetEnabled ? "Live actions disabled" : sourceAddress ? "Live actions enabled" : "Contracts not deployed"}</EvidenceTag></div>
 
     <section className="receipt-lookup surface live-boundary"><p className="eyebrow">LIVE DEMO BOUNDARY</p><p className="section-copy">These contracts store at most 10 valueless test units and transfer no tokens. The attester is trusted and manually operated; this is not a bridge or proof of finality. Vareq never receives the user's or operator's private key.</p></section>
 
@@ -185,6 +195,7 @@ function ConnectedTestnetFlow() {
           {operatorCommands && state && !state.fillAuthorized && (mode === "vulnerable" || !state.refunded) && <div className="operator-steps"><p><strong>Operator stage 1 — manually approve fill</strong></p><p>Share the confirmed transfer ID and source lock transaction with the separately controlled operator. The operator reviews the run and explicitly approves:</p><code>{operatorCommands.authorize}</code></div>}
           {operatorCommands && state?.fillAuthorized && <div className="operator-steps"><p><strong>Operator stage 2 — manually settle</strong></p><p>In vulnerable mode, the user can request a source refund after authorization to exercise the race. The operator then separately approves the Portaldot fill and Base claim attempt:</p><code>{operatorCommands.settle}</code></div>}
           {operatorCommands && mode === "patched" && state?.refunded && !state.fillAuthorized && <p className="field-note" role="status">This patched transfer was refunded before operator approval, so the operator script will correctly refuse to authorize a destination fill.</p>}
+          {nativeEvidenceCommands && <div className="operator-steps"><p><strong>Native Portaldot contracts-pallet path</strong></p><p>This separate native contract records the Base Sepolia lock after the SS58 attester verifies its successful receipt, then lets the distinct SS58 operator record a valueless fill. Deploy both vulnerable and patched fixtures before comparing modes. The operator needs tPOT for deployment and fill fees; the attester needs tPOT for attestations. Each action is a local CLI transaction separately approved by its signer. Keep encrypted Polkadot wallet exports and passwords outside Vercel and this repository.</p><p>One-time deployment for this fixture mode:</p><code>{nativeEvidenceCommands.deploy}</code><p>Attester — verifies the Base lock receipt and records it on Portaldot:</p><code>{nativeEvidenceCommands.attest}</code>{nativeEvidenceCommands.refund && <><p>Attester — records the confirmed Base refund:</p><code>{nativeEvidenceCommands.refund}</code></>}<p>Operator — records the native destination fill:</p><code>{nativeEvidenceCommands.fill}</code><p className="small-note">This is a genuine native contracts-pallet transaction path when deployed and broadcast. The Base event is checked by a trusted off-chain attester; the contract does not verify Base consensus, and no assets move.</p></div>}
         </div>}
         {notice && <p className="field-note" role="status">{notice}</p>}
         {error && <p className="field-error" role="alert">{error}</p>}

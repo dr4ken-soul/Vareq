@@ -344,10 +344,21 @@ function PrivyRunner({ onClose }: { onClose: () => void }) {
 
 type ReceiptLookupResult = {
   network: string;
-  chainId: number;
+  chainId: number | null;
   transactionHash: string;
   status: "pending-or-not-found" | "success" | "reverted" | "unknown";
-  receipt: null | { blockNumber: string; blockHash: string | null; confirmations: string; from: string | null; to: string | null };
+  receipt: null | {
+    blockNumber: string;
+    blockHash: string | null;
+    confirmations: string;
+    from?: string | null;
+    to?: string | null;
+    finalized?: boolean;
+    signer?: string | null;
+    extrinsicIndex?: number;
+    fee?: string | null;
+    events?: Array<{ section: string; method: string; data: unknown[] }>;
+  };
   explorerUrl: string | null;
   evidenceMode?: string;
 };
@@ -355,6 +366,7 @@ type ReceiptLookupResult = {
 function ReceiptLookup() {
   const [network, setNetwork] = useState("base-sepolia");
   const [transactionHash, setTransactionHash] = useState("");
+  const [blockHash, setBlockHash] = useState("");
   const [result, setResult] = useState<ReceiptLookupResult | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -365,8 +377,12 @@ function ReceiptLookup() {
     setResult(null);
     setBusy(true);
     try {
-      const params = new URLSearchParams({ network, txHash: transactionHash.trim() });
-      const response = await fetch("/api/testnet/receipts?" + params.toString());
+      const isNative = network === "portaldot-v3-native";
+      const params = new URLSearchParams({ txHash: transactionHash.trim() });
+      if (isNative) params.set("blockHash", blockHash.trim());
+      else params.set("network", network);
+      const endpoint = isNative ? "/api/testnet/native-receipts?" : "/api/testnet/receipts?";
+      const response = await fetch(endpoint + params.toString());
       setResult(await readApiResponse<ReceiptLookupResult>(response));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The receipt could not be checked.");
@@ -378,18 +394,24 @@ function ReceiptLookup() {
   return <section className="receipt-lookup surface" aria-labelledby="receipt-lookup-title">
     <p className="eyebrow">PUBLIC TESTNET DATA</p>
     <h2 id="receipt-lookup-title">Verify a transaction receipt</h2>
-    <p className="section-copy">This reads a submitted transaction from an allowlisted RPC and checks the network chain ID first. It does not send transactions or prove cross-chain finality.</p>
+    <p className="section-copy">This reads public transaction evidence only. Base and Portaldot EVM receipts use their EVM RPCs; native Portaldot receipts use its Substrate websocket and require the containing block hash. Verification does not prove cross-chain finality.</p>
     <form className="receipt-form" onSubmit={verify}>
-      <label>Network<select value={network} onChange={(event) => setNetwork(event.target.value)}><option value="base-sepolia">Base Sepolia</option><option value="portaldot-v3">Portaldot V3</option></select></label>
+      <label>Network<select value={network} onChange={(event) => setNetwork(event.target.value)}><option value="base-sepolia">Base Sepolia (EVM)</option><option value="portaldot-v3-native">Portaldot V3 (native Polkadot)</option><option value="portaldot-v3">Portaldot V3 (EVM)</option></select></label>
       <label>Transaction hash<input required minLength={66} maxLength={66} pattern="0x[a-fA-F0-9]{64}" value={transactionHash} onChange={(event) => setTransactionHash(event.target.value)} spellCheck={false} autoComplete="off" placeholder="0x…" /></label>
+      {network === "portaldot-v3-native" && <label>Containing block hash<input required minLength={66} maxLength={66} pattern="0x[a-fA-F0-9]{64}" value={blockHash} onChange={(event) => setBlockHash(event.target.value)} spellCheck={false} autoComplete="off" placeholder="0x…" /></label>}
       <button className={primary} type="submit" disabled={busy}>{busy ? "Checking receipt…" : "Verify receipt"}</button>
     </form>
     {error && <p className="field-error" role="alert">{error}</p>}
     {result && <article className="receipt-result" aria-live="polite">
-      <div className="result-heading"><strong>{result.network === "base-sepolia" ? "Base Sepolia" : "Portaldot V3"} · chain {result.chainId}</strong><EvidenceTag kind={result.status === "success" ? "success" : result.status === "reverted" ? "error" : "warning"}>{result.status}</EvidenceTag></div>
+      <div className="result-heading"><strong>{result.network === "base-sepolia" ? "Base Sepolia · EVM chain 84532" : result.network === "portaldot-v3-native" ? "Portaldot V3 · native Substrate" : "Portaldot V3 · EVM chain 420420777"}</strong><EvidenceTag kind={result.status === "success" ? "success" : result.status === "reverted" ? "error" : "warning"}>{result.status}</EvidenceTag></div>
       <p className="small-note mono">{result.transactionHash}</p>
-      {result.receipt && <p className="small-note">Block {result.receipt.blockNumber} · {result.receipt.confirmations} observed confirmation(s) · {result.receipt.blockHash ?? "block hash unavailable"}</p>}
-      {result.explorerUrl && <a className={textLink} href={result.explorerUrl} target="_blank" rel="noreferrer">Open explorer receipt <span aria-hidden="true">↗</span></a>}
+      {result.receipt && <>
+        <p className="small-note">Block {result.receipt.blockNumber} · {result.receipt.confirmations} finalized confirmation(s) · {result.receipt.blockHash ?? "block hash unavailable"}</p>
+        {result.receipt.signer && <p className="small-note">Native signer: <span className="mono">{result.receipt.signer}</span> · extrinsic {result.receipt.extrinsicIndex}</p>}
+        {result.receipt.finalized === false && <p className="field-note">This native extrinsic is included but not finalized yet.</p>}
+        {result.receipt.events && result.receipt.events.length > 0 && <p className="small-note">Events: {result.receipt.events.map((item) => `${item.section}.${item.method}`).join(", ")}</p>}
+      </>}
+      {result.explorerUrl && <a className={textLink} href={result.explorerUrl} target="_blank" rel="noreferrer">{result.network === "portaldot-v3-native" ? "Open Portaldot node console" : "Open explorer receipt"} <span aria-hidden="true">↗</span></a>}
     </article>}
   </section>;
 }

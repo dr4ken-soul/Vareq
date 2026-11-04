@@ -4,5 +4,10 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/app/(.*)", "destination": "/" }
-  ]
+  ],
+  "functions": {
+    "api/testnet/native-receipts.ts": {
+      "maxDuration": 30
+    }
+  }
 }

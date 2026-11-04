@@ -1,0 +1,7 @@
+[toolchain]
+channel = "1.81.0"
+components = ["rust-src"]
+targets = ["wasm32-unknown-unknown"]
+
+[profile]
+name = "minimal"

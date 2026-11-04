@@ -57,6 +57,8 @@ Participant reports illustrate uncertainty rather than resolve it:
 
 Those are participant statements, may reflect different methods or dates, and are not authoritative network specifications. Test with a funded isolated test signer and ask organisers. Do not copy their reported padding, symbols, decimals, costs or tx paths as facts without independent verification.
 
+**Native V3 check on 4 Nov 2026:** connecting to `wss://test-node-v3.portaldot.dev` returned chain `PortaldotV3 Test`, runtime `portaldot-v3` spec version `3002`, SS58 format `42`, and native token `tPOT` with 14 decimals. Runtime metadata exposes `system.remarkWithEvent`, `balances`, `contracts` (including `instantiateWithCode`/`call`) and `revive` calls. This confirms that the native RPC and those call definitions are exposed; it does **not** prove a native contract can be deployed or called successfully. The supplied SS58 wallet showed zero free native balance at the sampled head, so it could not pay for a native write at that check. No transaction was broadcast.
+
 ### Local versus live replay
 
 Foundry's Anvil documents local snapshots, time setting and mining controls [1](https://getfoundry.sh/anvil/reference/). These tools enable controlled local experiments; they do not control independent public-chain inclusion or finality. Anvil snapshot IDs are session-specific: portable reproduction requires reconstructible fixture inputs and pinned versions.
