@@ -38,3 +38,9 @@ jobs:
       - run: cargo test --manifest-path contracts/portaldot-native/Cargo.toml
       - run: cargo install cargo-contract --version 5.0.3 --locked
       - run: cargo contract build --release --manifest-path contracts/portaldot-native/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vareq-portaldot-native-bundle
+          path: contracts/portaldot-native/target/**/*.contract
+          if-no-files-found: error
+          retention-days: 7
