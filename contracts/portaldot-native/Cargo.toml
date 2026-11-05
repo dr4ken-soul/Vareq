@@ -13,7 +13,6 @@ scale-info = { version = "2.11.6", default-features = false, features = ["derive
 
 [lib]
 path = "lib.rs"
-crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["std"]
