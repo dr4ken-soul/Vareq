@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85.0
         with:
-          components: rust-src
+          components: clippy, rust-src
           targets: wasm32-unknown-unknown
       - run: cargo test --manifest-path contracts/portaldot-native/Cargo.toml
       - run: cargo install cargo-contract --version 5.0.3 --locked
