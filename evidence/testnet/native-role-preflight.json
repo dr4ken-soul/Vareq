@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-11-05T18:49:33Z",
+  "network": {
+    "name": "Portaldot V3",
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "token": "tPOT",
+    "decimals": 14
+  },
+  "operation": "read-only runtime and native signer preflight",
+  "signers": {
+    "operator": {
+      "encryptedKeystoreUnlocked": true,
+      "matchesSubmittedSs58Address": true,
+      "freeBalance": "497.89027337505707 tPOT"
+    },
+    "attester": {
+      "encryptedKeystoreUnlocked": true,
+      "matchesSubmittedSs58Address": true,
+      "freeBalance": "1.00000000000000 tPOT"
+    },
+    "accountsAreDistinct": true
+  },
+  "artifact": {
+    "readableAtConfiguredPath": false,
+    "embeddedWasmAvailable": false
+  },
+  "status": "stopped-before-dry-run",
+  "transactionSubmitted": false,
+  "contractDeployed": false,
+  "reason": "No readable .contract bundle with embedded Wasm was available at the configured artifact path."
+}
