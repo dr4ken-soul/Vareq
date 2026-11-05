@@ -1,5 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 
+extern crate ink_lang as ink;
+
 #[ink::contract]
 mod vareq_portaldot_native_fixture {
     use ink_storage::Mapping;
