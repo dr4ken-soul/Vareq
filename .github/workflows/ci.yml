@@ -42,10 +42,6 @@ jobs:
         run: |
           cargo +1.85.0 metadata --format-version 1 --manifest-path contracts/portaldot-native/Cargo.toml > /tmp/vareq-contract-metadata.json
           python3 -c 'import json; d=json.load(open("/tmp/vareq-contract-metadata.json")); print("\n".join("%s %s (%s)" % (p["name"], p["version"], p["manifest_path"]) for p in d["packages"] if p.get("edition") == "2024") or "No edition 2024 packages found")'
-      - name: Install the legacy ink! linter runner
-        run: |
-          cargo +1.85.0 install cargo-dylint --version 4.0.1 --locked
-          cargo +1.85.0 install dylint-link --version 4.0.1 --locked
       - name: Install the legacy ink! builder toolchain
         run: rustup toolchain install nightly-2022-06-30 --profile minimal --component llvm-tools-preview --component rust-src --component rustc-dev
       - name: Install cargo-contract compatible with ink! 3
