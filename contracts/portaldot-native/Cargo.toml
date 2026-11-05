@@ -19,6 +19,7 @@ scale-info-derive = "=2.1.2"
 
 [lib]
 path = "lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["std"]
