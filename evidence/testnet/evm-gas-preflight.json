@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "observedOn": "2026-11-05",
+  "method": "Read-only viem balance query",
+  "signer": "shared disposable EVM test signer; address omitted",
+  "networks": [
+    {
+      "name": "Base Sepolia",
+      "chainId": 84532,
+      "balance": "0",
+      "unit": "ETH"
+    },
+    {
+      "name": "Portaldot V3 EVM",
+      "chainId": 420420777,
+      "balance": "0",
+      "unit": "native EVM units"
+    }
+  ],
+  "transactionsSubmitted": false,
+  "limitation": "No EVM transaction can be sent from this account until it has test gas on the target EVM network."
+}

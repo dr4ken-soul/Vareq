@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "observedOn": "2026-11-05",
+  "network": {
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "rpc": "wss://test-node-v3.portaldot.dev"
+  },
+  "sourceCommit": "03984d7cd2b724f62df7adeff85dd0b5ab03cf6f",
+  "artifact": {
+    "inkVersion": "4.3.0",
+    "builder": "cargo-contract 3.2.0",
+    "wasmBytes": 11222,
+    "wasmSha256": "E09EDBA4EC6F51C889DF8D6D07DDCF86EF9F7562388E5E0E700BB9924B059336",
+    "unsupportedImport": "seal2.set_storage"
+  },
+  "operation": "Read-only contracts.instantiate preflight",
+  "result": "rejected",
+  "error": "Can't load the module into wasmi!",
+  "transactionSubmitted": false,
+  "contractDeployed": false
+}

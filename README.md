@@ -15,7 +15,7 @@ Vareq explores bounded bridge timing scenarios and records an inspectable trace.
 - scenarios/refund-fill-race.json: curated bounded refund/fill timing scenario.
 - docs/design/reference-comps: eight editable visual reference compositions used to guide the landing page.
 
-The browser demo is a TypeScript reference model, not EVM execution. Two sanitized local-model traces are included in the public inspector. The repository includes two live paths: the existing Base Sepolia + Portaldot EVM fixtures, and a native Portaldot contracts-pallet destination that accepts a trusted attestation of a Base Sepolia receipt. Neither path is represented as deployed until its contract address and finalized transactions are recorded. The fixtures move no assets and do not establish bridge security or cross-chain finality.
+The browser demo is a TypeScript reference model, not EVM execution. Two sanitized local-model traces are included in the public inspector. The repository includes two cross-network paths: the Base Sepolia + Portaldot EVM fixtures and a native Portaldot contracts-pallet destination that accepts a trusted attestation of a Base Sepolia receipt. Separately, the legacy Base-only TestnetRoleFixture is deployed at `0x62ae6943a42353e0aa20c5cec025374efa46ea79`; its five successful transactions are recorded in `evidence/testnet/base-sepolia-5c09084f7a.json`. That role fixture is a single-chain, valueless experiment and does not verify the cross-network paths. The EVM cross-network fixtures and native destination are not yet recorded as deployed. The fixtures move no assets and do not establish bridge security or cross-chain finality. The fixtures move no assets and do not establish bridge security or cross-chain finality.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ The browser demo is a TypeScript reference model, not EVM execution. Two sanitiz
     bun install --frozen-lockfile
     bun run dev
 
-Open the local address printed by Vite. Public pages are readable without an account. Browser actions require Privy authentication and a connected wallet. The hosted AI route requires server-side Privy, Groq and Upstash credentials; the Vercel environment is configured to enable it, but the full authenticated production flow still needs an end-to-end check.
+Open the local address printed by Vite. Public pages are readable without an account. Browser actions require Privy authentication and a connected wallet. Vercel has the hosted AI route and required server-side settings configured. A real Groq response has been accepted by Vareq validation locally; the production Privy-authenticated wallet flow still needs an end-to-end session check.
 
 ## Verify
 
@@ -148,6 +148,13 @@ The CLI writes sanitized deployment and run evidence under ignored `work/portald
 
 The marker-only command remains available for RPC and native extrinsic diagnostics. Do not present its remarks as destination contract actions or fills.
 
+## Verified run evidence (5 Nov 2026)
+
+- evidence/testnet/native-transfer.json: a finalized 1 tPOT operator-to-attester funding transfer, independently checked through Vareq's production native receipt endpoint. It is not a contract call.
+- evidence/ai/groq-proposal.json: a real Groq response accepted by Vareq validation; vulnerable/patched outcomes are local reference-model replays.
+- evidence/testnet/native-contract-preflight.json: the ink! 4.3 artifact was rejected by the V3 read-only instantiation check before any transaction was submitted.
+- evidence/testnet/base-sepolia-5c09084f7a.json: five successful Base Sepolia transactions deploy TestnetRoleFixture, lock one reference unit, record the attested permit, operator fill and claim, and confirm the final state. All three EVM roles used the same signer; no assets moved and this is not cross-chain evidence.
+- evidence/testnet/evm-gas-preflight.json: an earlier zero-balance snapshot, superseded on Base Sepolia by the funded account and five receipts above; the Portaldot V3 EVM account remained unfunded.
 ## Evidence modes
 
 - **Local reference model:** bounded TypeScript state-machine execution in the browser or CLI.
@@ -161,7 +168,7 @@ Recorded playback is not a new execution. A hash of an artefact's input only ide
 - The coordinator mitigation assumes one authority durably records a single decision per transfer and never equivocates. It can censor or stop progress.
 - The local fixture and two-network testnet contracts are teaching models. The testnet attester is trusted; it does not provide trustless message passing or finality, and the demonstration does not support real assets.
 - Scenario actions are limited to a fixed schema with a maximum of 20 actions. The hosted Groq flow requires explicit consent, a Privy access token, a verified linked-wallet identity, a domain-bound wallet signature, an atomically consumed challenge, and atomic per-wallet/application quotas. Vercel has the AI switch and required server credentials configured; the authenticated production flow still needs end-to-end verification.
-- The published examples are validated, sanitized `local-reference-model` artefacts. The public-testnet evidence list remains empty until the live fixture is deployed, correlated receipts/state are verified, and the evidence is deliberately released.
+- The published inspector examples are sanitized local-reference-model artefacts. Separate evidence files record five successful single-chain Base Sepolia fixture transactions, one finalized native tPOT funding transfer, and the Groq proposal/model comparison. No Portaldot contracts-pallet contract call or correlated Base-to-Portaldot cross-chain race is verified yet.
 - No user, operator, attester, or testnet deploy private key belongs in this repository.
 
 See the product blueprint (APP_BLUEPRINT.md), build sequence (BUILD_GUIDE.md), frontend specification (FRONTEND_SPEC.md), working rules (CLAUDE.md), and submission checklist (SUBMISSION_CHECKLIST.md) for full assumptions and remaining gates.

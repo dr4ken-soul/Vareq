@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-05",
+  "provider": "Groq",
+  "model": "openai/gpt-oss-120b",
+  "proposal": {
+    "origin": "ai",
+    "validated": true,
+    "actionCount": 7,
+    "scenario": {
+      "schemaVersion": "1.0.0",
+      "scenarioId": "refund-fill-race-v1",
+      "title": "Delayed fill after a source refund",
+      "origin": "ai",
+      "seed": "41722",
+      "fixtureId": "reference-vulnerable-v1",
+      "adapterVersion": "1.0.0",
+      "refundAfterTick": 10,
+      "actions": [
+        {
+          "id": "lock",
+          "tick": 0,
+          "dependsOn": [],
+          "kind": "LOCK",
+          "transferId": "transfer-001",
+          "amount": "100"
+        },
+        {
+          "id": "fill-permit",
+          "tick": 1,
+          "dependsOn": [
+            {
+              "id": "lock",
+              "when": "succeeded"
+            }
+          ],
+          "kind": "ISSUE_FILL_PERMIT",
+          "transferId": "transfer-001"
+        },
+        {
+          "id": "hold-delivery",
+          "tick": 2,
+          "dependsOn": [
+            {
+              "id": "fill-permit",
+              "when": "attempted"
+            }
+          ],
+          "kind": "DELAY_DELIVERY",
+          "transferId": "transfer-001"
+        },
+        {
+          "id": "advance-time",
+          "tick": 11,
+          "dependsOn": [
+            {
+              "id": "hold-delivery",
+              "when": "attempted"
+            }
+          ],
+          "kind": "ADVANCE_LOGICAL_TIME",
+          "toTick": 11
+        },
+        {
+          "id": "request-refund",
+          "tick": 11,
+          "dependsOn": [
+            {
+              "id": "advance-time",
+              "when": "attempted"
+            }
+          ],
+          "kind": "REQUEST_REFUND",
+          "transferId": "transfer-001"
+        },
+        {
+          "id": "deliver-fill",
+          "tick": 12,
+          "dependsOn": [
+            {
+              "id": "hold-delivery",
+              "when": "attempted"
+            }
+          ],
+          "kind": "DELIVER_FILL",
+          "transferId": "transfer-001"
+        },
+        {
+          "id": "operator-claim",
+          "tick": 13,
+          "dependsOn": [
+            {
+              "id": "deliver-fill",
+              "when": "attempted"
+            }
+          ],
+          "kind": "CLAIM",
+          "transferId": "transfer-001"
+        }
+      ],
+      "hypothesis": "A destination fill permit held in flight may arrive after the source refund window opens."
+    }
+  },
+  "referenceModelReplays": {
+    "mode": "local-reference-model",
+    "vulnerable": {
+      "completion": "complete",
+      "invariant": {
+        "id": "no-double-settlement",
+        "status": "violation",
+        "reason": "The source refunded the transfer and the destination also filled it.",
+        "supportingStepIds": [
+          "step-05",
+          "step-06",
+          "step-07"
+        ]
+      },
+      "terminal": {
+        "sourceRefunded": true,
+        "destinationFilled": true,
+        "operatorReimbursed": false
+      }
+    },
+    "patched": {
+      "completion": "complete",
+      "invariant": {
+        "id": "no-double-settlement",
+        "status": "pass",
+        "reason": "The source was not refunded while a destination fill also completed within this run.",
+        "supportingStepIds": [
+          "step-06",
+          "step-07"
+        ]
+      },
+      "terminal": {
+        "sourceRefunded": false,
+        "destinationFilled": true,
+        "operatorReimbursed": true
+      }
+    }
+  },
+  "limitations": [
+    "The proposal came from a real Groq API response and passed Vareq schema and semantic checks.",
+    "Both replays ran through Vareq local reference model; neither is EVM execution or a public-testnet transaction.",
+    "The patched result assumes one durable, non-equivocating coordinator. This bounded scenario is not an audit or proof.",
+    "The authenticated production Privy-to-Groq request flow remains unverified."
+  ]
+}

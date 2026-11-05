@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "evidenceMode": "public-testnet",
+  "network": "base-sepolia",
+  "chainId": 84532,
+  "fixture": "TestnetRoleFixture",
+  "contractAddress": "0x62ae6943a42353e0aa20c5cec025374efa46ea79",
+  "transferId": "0xdb4f2a1f7f80db42ecdc6053b776a9cef8788aebe36c0c463b4e28e8546e4e63",
+  "roles": {
+    "userAndDeployer": "0x145D3d0C61615E0A4F233d470A7F3098A6D19f93",
+    "operator": "0x145D3d0C61615E0A4F233d470A7F3098A6D19f93",
+    "attester": "0x145D3d0C61615E0A4F233d470A7F3098A6D19f93"
+  },
+  "transactions": {
+    "deployment": {
+      "hash": "0x5c09084f7afdab2268e9f6606b35424bcf2aa9bcf32e063428482c7b99986d32",
+      "blockNumber": "54924582",
+      "blockHash": "0xd08ecaa38e9758806aa6811a9ccbc45bcee83a46789711a2cf8a330a1d799f8e",
+      "status": "success",
+      "gasUsed": "795488",
+      "explorerUrl": "https://sepolia.basescan.org/tx/0x5c09084f7afdab2268e9f6606b35424bcf2aa9bcf32e063428482c7b99986d32"
+    },
+    "userLock": {
+      "hash": "0x52deb3e066c030efdff928141633d7bd2eb5f81d2a5e3152dcfe8bc479d2115a",
+      "blockNumber": "54924591",
+      "blockHash": "0xa8482dc4aa165e0a10e919cde617b2fb3ad7213de8bab8c57ba9436d2564511d",
+      "status": "success",
+      "gasUsed": "90387",
+      "explorerUrl": "https://sepolia.basescan.org/tx/0x52deb3e066c030efdff928141633d7bd2eb5f81d2a5e3152dcfe8bc479d2115a"
+    },
+    "attestedPermit": {
+      "hash": "0x9681d1e15de56ca83d9c586a52216a1bf00555fdf91fcb33d2471d68293770d3",
+      "blockNumber": "54924603",
+      "blockHash": "0xccbcfb7aa3979626d9bc7d234e725079b31e9772a0bf3141867ccf9d9691ffd5",
+      "status": "success",
+      "gasUsed": "38933",
+      "explorerUrl": "https://sepolia.basescan.org/tx/0x9681d1e15de56ca83d9c586a52216a1bf00555fdf91fcb33d2471d68293770d3"
+    },
+    "operatorFill": {
+      "hash": "0x006c7f8af55eb39bc76f1454a9eb173338af2168bd7a225bfd634c8101fc6b93",
+      "blockNumber": "54924613",
+      "blockHash": "0x77ab2f6ba035fd40616f95cece4a0985b0ae30dc2130bd2ba2da4c42c0bf3323",
+      "status": "success",
+      "gasUsed": "30866",
+      "explorerUrl": "https://sepolia.basescan.org/tx/0x006c7f8af55eb39bc76f1454a9eb173338af2168bd7a225bfd634c8101fc6b93"
+    },
+    "attestedClaim": {
+      "hash": "0x2d4335b11a584b12545f6afc255d6f079f8fa555c9aba5bb66717fddabc65e76",
+      "blockNumber": "54924625",
+      "blockHash": "0x6e512d87b12ab733de965186a7bca68d5e0d23f30f69b8fdf208772411104a6a",
+      "status": "success",
+      "gasUsed": "39414",
+      "explorerUrl": "https://sepolia.basescan.org/tx/0x2d4335b11a584b12545f6afc255d6f079f8fa555c9aba5bb66717fddabc65e76"
+    }
+  },
+  "verifiedState": {
+    "locked": true,
+    "fillPermit": true,
+    "destinationFilled": true,
+    "operatorReimbursed": true,
+    "referenceUnits": "1"
+  },
+  "limitation": "Five successful transactions on one Base Sepolia teaching fixture. All three EVM roles used one test-only signer, so independent role control is not demonstrated. This is not a cross-chain contract interaction, does not prove a Portaldot–Base bridge, and moves no assets.",
+  "verifiedAt": "2026-11-05 19:34:22 UTC"
+}
