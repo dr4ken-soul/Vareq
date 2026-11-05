@@ -21,6 +21,11 @@ type Stage = "deploy" | "attest" | "refund" | "fill";
 type Mode = "patched" | "vulnerable";
 type Args = { stage: Stage; mode: Mode; transferId?: Hex; sourceTransaction?: Hex; refundTransaction?: Hex };
 type Receipt = { extrinsicHash: string; blockHash: string; blockNumber: string; signer: string; finalized: true; event: string };
+type InstantiateDryRun = {
+  result: { isErr: boolean };
+  debugMessage: { toHex(): string };
+  storageDeposit: { isCharge: boolean; asCharge: { toBigInt(): bigint } };
+};
 
 function stop(message: string): never {
   console.error("Native Portaldot contract operation stopped: " + message);
@@ -257,7 +262,7 @@ async function main() {
         { Upload: hexToU8a(wasm) },
         callArgs[4],
         callArgs[5],
-      );
+      ) as unknown as InstantiateDryRun;
       if (dryRun.result.isErr) {
         const detail = new TextDecoder().decode(hexToU8a(dryRun.debugMessage.toHex())).trim();
         stop("Portaldot V3 rejected the native Wasm during read-only deployment preflight" + (detail ? ": " + detail : "."));
