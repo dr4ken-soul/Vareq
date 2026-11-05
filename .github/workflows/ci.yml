@@ -36,6 +36,8 @@ jobs:
           components: clippy, rust-src
           targets: wasm32-unknown-unknown
       - run: cargo +1.85.0 test --manifest-path contracts/portaldot-native/Cargo.toml
+      - name: Pin metadata crates for the legacy ink! 3 builder
+        run: cargo +1.85.0 update --manifest-path contracts/portaldot-native/Cargo.toml -p indexmap --precise 2.11.4
       - name: Report edition 2024 crates in legacy contract metadata
         run: |
           cargo +1.85.0 metadata --format-version 1 --manifest-path contracts/portaldot-native/Cargo.toml > /tmp/vareq-contract-metadata.json
