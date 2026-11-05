@@ -256,17 +256,20 @@ mod vareq_portaldot_native_fixture {
             let (_, operator, attester) = accounts();
             let mut patched = VareqPortaldotNativeFixture::new(operator, attester, true);
             let mut vulnerable = VareqPortaldotNativeFixture::new(operator, attester, false);
-            for contract in [&mut patched, &mut vulnerable] {
-                ink::env::test::set_caller::<ink::env::DefaultEnvironment>(attester);
-                assert_eq!(
-                    contract.attest_source_lock([1; 32], [2; 32], [3; 32], [4; 20], [5; 20], 1),
-                    Ok(())
-                );
-                assert_eq!(contract.attest_source_refund([1; 32], [6; 32]), Ok(()));
-            }
+            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(attester);
+            assert_eq!(
+                patched.attest_source_lock([1; 32], [2; 32], [3; 32], [4; 20], [5; 20], 1),
+                Ok(())
+            );
+            assert_eq!(patched.attest_source_refund([1; 32], [6; 32]), Ok(()));
+            assert_eq!(
+                vulnerable.attest_source_lock([7; 32], [2; 32], [3; 32], [4; 20], [5; 20], 1),
+                Ok(())
+            );
+            assert_eq!(vulnerable.attest_source_refund([7; 32], [6; 32]), Ok(()));
             ink::env::test::set_caller::<ink::env::DefaultEnvironment>(operator);
             assert_eq!(patched.fill([1; 32]), Err(FixtureError::InvalidState));
-            assert_eq!(vulnerable.fill([1; 32]), Ok(()));
+            assert_eq!(vulnerable.fill([7; 32]), Ok(()));
         }
     }
 }
