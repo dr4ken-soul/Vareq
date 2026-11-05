@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "network": "portaldot-v3-native",
+  "runtime": {
+    "specName": "portaldot-v3",
+    "specVersion": 3002
+  },
+  "evidenceType": "test-token-funding-transfer",
+  "transaction": {
+    "hash": "0xdb7e97a3244a6a5daa78ae0ac66600b65e718f3651e23f9178ce0188393a577f",
+    "extrinsicIndex": 1,
+    "signer": "5Ev6Vyhwr5VPKa2HxLqRNCMvDVDQgwKthEE8xJdf7DqajWRu"
+  },
+  "block": {
+    "number": "328060",
+    "hash": "0x016f580ae101ea7b817a2c9ec2a773b9248cd1c83e17d607c7d1d60c771eac8d",
+    "finalized": true,
+    "confirmationsObservedAtVerification": "4376"
+  },
+  "transfer": {
+    "from": "5Ev6Vyhwr5VPKa2HxLqRNCMvDVDQgwKthEE8xJdf7DqajWRu",
+    "to": "5GHatG3LrAipB18ThKVQ8k6Yd1C7Ew3SKdM71CZ37iq5r8Br",
+    "baseUnits": "100000000000000",
+    "decimals": 14,
+    "amount": "1",
+    "unit": "tPOT"
+  },
+  "fee": {
+    "baseUnits": "1490397255188",
+    "amount": "0.01490397255188",
+    "unit": "tPOT"
+  },
+  "events": [
+    "balances.Transfer",
+    "system.ExtrinsicSuccess"
+  ],
+  "verifiedAt": "2026-11-05T08:50:59Z",
+  "verification": {
+    "method": "Vareq production native receipt API",
+    "url": "https://vareq.vercel.app/api/testnet/native-receipts?txHash=0xdb7e97a3244a6a5daa78ae0ac66600b65e718f3651e23f9178ce0188393a577f&blockHash=0x016f580ae101ea7b817a2c9ec2a773b9248cd1c83e17d607c7d1d60c771eac8d",
+    "status": "success",
+    "finalized": true
+  },
+  "limitations": [
+    "This is a real test-token funding transfer, not a contract deployment or contract interaction.",
+    "It does not prove that native tPOT funds a mapped Portaldot EVM account.",
+    "It does not establish cross-chain verification, bridge security, or asset transfer."
+  ]
+}
