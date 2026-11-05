@@ -16,6 +16,7 @@ const nativeRpc = process.env.PORTALDOT_V3_NATIVE_WS_URL?.trim() || "wss://test-
 const baseRpc = process.env.BASE_SEPOLIA_RPC_URL?.trim() || "https://sepolia.base.org";
 const LOCKED_EVENT = parseAbiItem("event Locked(bytes32 indexed transferId,address indexed user,uint256 units)");
 const REFUNDED_EVENT = parseAbiItem("event Refunded(bytes32 indexed transferId,address indexed user,uint256 units)");
+const T_POT = 10n ** 14n;
 type Stage = "deploy" | "attest" | "refund" | "fill";
 type Mode = "patched" | "vulnerable";
 type Args = { stage: Stage; mode: Mode; transferId?: Hex; sourceTransaction?: Hex; refundTransaction?: Hex };
@@ -24,6 +25,14 @@ type Receipt = { extrinsicHash: string; blockHash: string; blockNumber: string; 
 function stop(message: string): never {
   console.error("Native Portaldot contract operation stopped: " + message);
   process.exit(1);
+}
+
+function storageDepositLimit(): bigint {
+  const raw = process.env.PORTALDOT_NATIVE_MAX_STORAGE_DEPOSIT_TPOT?.trim();
+  if (!raw || !/^[1-9][0-9]*$/.test(raw)) {
+    stop("Set PORTALDOT_NATIVE_MAX_STORAGE_DEPOSIT_TPOT to a positive whole-tPOT budget in the ignored local .env.");
+  }
+  return BigInt(raw) * T_POT;
 }
 
 function readArgs(): Args {
@@ -237,18 +246,36 @@ async function main() {
       const constructor = (code.tx as Record<string, (...values: any[]) => any>).new;
       if (!constructor) stop("The native artifact has no new constructor.");
       const gasLimit = api.registry.createType("WeightV2", { refTime: "1000000000000", proofSize: "16777216" });
-      const tx = constructor({ gasLimit, storageDepositLimit: null }, operator.address, attester.address, args.mode === "patched");
+      const maxStorageDeposit = storageDepositLimit();
+      const tx = constructor({ gasLimit, storageDepositLimit: maxStorageDeposit }, operator.address, attester.address, args.mode === "patched");
+      const callArgs = tx.method.args;
+      const dryRun = await api.call.contractsApi.instantiate(
+        operator.address,
+        callArgs[0],
+        gasLimit,
+        maxStorageDeposit,
+        { Upload: hexToU8a(wasm) },
+        callArgs[4],
+        callArgs[5],
+      );
+      if (dryRun.result.isErr) {
+        const detail = new TextDecoder().decode(hexToU8a(dryRun.debugMessage.toHex())).trim();
+        stop("Portaldot V3 rejected the native Wasm during read-only deployment preflight" + (detail ? ": " + detail : "."));
+      }
+      const estimatedStorageDeposit = dryRun.storageDeposit.isCharge ? dryRun.storageDeposit.asCharge.toBigInt() : 0n;
+      if (estimatedStorageDeposit > maxStorageDeposit) stop("Dry-run storage deposit exceeds the configured per-transaction tPOT cap.");
       const payment = await tx.paymentInfo(operator);
       const account = await api.query.system.account(operator.address);
       const free = (account as any).data.free.toBigInt() as bigint;
       const fee = payment.partialFee.toBigInt() as bigint;
       const minimum = (api.consts.balances.existentialDeposit as any).toBigInt() as bigint;
-      if (free < fee + minimum) stop(operator.address + " needs more native tPOT for the estimated inclusion fee and minimum balance.");
+      if (free < fee + estimatedStorageDeposit + minimum) stop(operator.address + " does not have enough free tPOT for the dry-run storage deposit, inclusion fee, and minimum balance.");
       console.log("Deploying " + args.mode + " native fixture on Portaldot V3.");
       console.log("Operator: " + operator.address);
       console.log("Attester: " + attester.address);
-      console.log("Estimated inclusion fee: " + (Number(fee) / 1e14).toFixed(6) + " tPOT; the chain will also charge a storage deposit for contract code and state.");
-      console.log("The deployment uses the explicit --approve and --broadcast flags. Storage deposit is not capped by this command; use a disposable, funded operator account.");
+      console.log("Estimated storage deposit: " + (Number(estimatedStorageDeposit) / 1e14).toFixed(6) + " tPOT (limit " + (Number(maxStorageDeposit) / 1e14).toFixed(0) + ").");
+      console.log("Estimated inclusion fee: " + (Number(fee) / 1e14).toFixed(6) + " tPOT.");
+      console.log("The deployment uses explicit --approve and --broadcast flags and enforces the configured storage-deposit cap.");
       const deployment = await new Promise<{ address: string; receipt: Receipt }>((resolvePromise, rejectPromise) => {
         let unsubscribe: (() => void) | undefined;
         const timer = setTimeout(() => { unsubscribe?.(); rejectPromise(new Error("Deployment did not finalize within three minutes.")); }, 180_000);
@@ -298,7 +325,7 @@ async function main() {
     if (args.stage === "attest") {
       const locked = await verifySourceEvent("lock", args.mode, args.transferId, args.sourceTransaction!);
       const tx = (contract.tx as Record<string, (...values: any[]) => any>).attest_source_lock(
-        { gasLimit: api.registry.createType("WeightV2", { refTime: "500000000000", proofSize: "8388608" }), storageDepositLimit: null },
+        { gasLimit: api.registry.createType("WeightV2", { refTime: "500000000000", proofSize: "8388608" }), storageDepositLimit: storageDepositLimit() },
         hexToU8a(args.transferId), hexToU8a(locked.transactionHash), hexToU8a(locked.blockHash),
         hexToU8a(locked.sourceFixture), hexToU8a(locked.user), locked.units,
       );
@@ -307,14 +334,14 @@ async function main() {
     } else if (args.stage === "refund") {
       const refunded = await verifySourceEvent("refund", args.mode, args.transferId, args.refundTransaction!);
       const tx = (contract.tx as Record<string, (...values: any[]) => any>).attest_source_refund(
-        { gasLimit: api.registry.createType("WeightV2", { refTime: "500000000000", proofSize: "8388608" }), storageDepositLimit: null },
+        { gasLimit: api.registry.createType("WeightV2", { refTime: "500000000000", proofSize: "8388608" }), storageDepositLimit: storageDepositLimit() },
         hexToU8a(args.transferId), hexToU8a(refunded.transactionHash),
       );
       receipt = await sendFinalized(api, attester, tx, "SourceRefundAttested");
       source = { chainId: 84532, ...refunded };
     } else {
       const tx = (contract.tx as Record<string, (...values: any[]) => any>).fill(
-        { gasLimit: api.registry.createType("WeightV2", { refTime: "500000000000", proofSize: "8388608" }), storageDepositLimit: null },
+        { gasLimit: api.registry.createType("WeightV2", { refTime: "500000000000", proofSize: "8388608" }), storageDepositLimit: storageDepositLimit() },
         hexToU8a(args.transferId),
       );
       receipt = await sendFinalized(api, operator, tx, "DestinationFilled");
