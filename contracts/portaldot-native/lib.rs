@@ -1,14 +1,16 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 
+use ink_lang as ink;
+
 #[ink::contract]
 mod vareq_portaldot_native_fixture {
-    use ink::storage::Mapping;
+    use ink_storage::Mapping;
 
     const MAX_UNITS: u128 = 10;
     const BASE_SEPOLIA_CHAIN_ID: u32 = 84_532;
 
     #[derive(scale::Encode, scale::Decode, Clone, Debug, PartialEq, Eq, scale_info::TypeInfo)]
-    #[cfg_attr(feature = "std", derive(ink::storage::traits::StorageLayout))]
+    #[cfg_attr(feature = "std", derive(ink_storage::traits::StorageLayout))]
     pub struct Transfer {
         pub source_transaction: [u8; 32],
         pub source_block: [u8; 32],
@@ -229,7 +231,7 @@ mod vareq_portaldot_native_fixture {
         use super::*;
 
         fn accounts() -> (AccountId, AccountId, AccountId) {
-            let accounts = ink::env::test::default_accounts::<ink::env::DefaultEnvironment>();
+            let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>();
             (accounts.alice, accounts.bob, accounts.charlie)
         }
 
@@ -238,16 +240,16 @@ mod vareq_portaldot_native_fixture {
             let (deployer, operator, attester) = accounts();
             let mut contract = VareqPortaldotNativeFixture::new(operator, attester, true);
             let transfer_id = [1; 32];
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(attester);
+            ink_env::test::set_caller::<ink_env::DefaultEnvironment>(attester);
             assert_eq!(
                 contract.attest_source_lock(transfer_id, [2; 32], [3; 32], [4; 20], [5; 20], 1),
                 Ok(())
             );
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(operator);
+            ink_env::test::set_caller::<ink_env::DefaultEnvironment>(operator);
             assert_eq!(contract.fill(transfer_id), Ok(()));
             let state = contract.get_transfer(transfer_id).unwrap();
             assert!(state.attested && state.filled && !state.refunded);
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(deployer);
+            ink_env::test::set_caller::<ink_env::DefaultEnvironment>(deployer);
             assert_eq!(contract.fill(transfer_id), Err(FixtureError::Unauthorized));
         }
 
@@ -256,7 +258,7 @@ mod vareq_portaldot_native_fixture {
             let (_, operator, attester) = accounts();
             let mut patched = VareqPortaldotNativeFixture::new(operator, attester, true);
             let mut vulnerable = VareqPortaldotNativeFixture::new(operator, attester, false);
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(attester);
+            ink_env::test::set_caller::<ink_env::DefaultEnvironment>(attester);
             assert_eq!(
                 patched.attest_source_lock([1; 32], [2; 32], [3; 32], [4; 20], [5; 20], 1),
                 Ok(())
@@ -267,7 +269,7 @@ mod vareq_portaldot_native_fixture {
                 Ok(())
             );
             assert_eq!(vulnerable.attest_source_refund([7; 32], [6; 32]), Ok(()));
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(operator);
+            ink_env::test::set_caller::<ink_env::DefaultEnvironment>(operator);
             assert_eq!(patched.fill([1; 32]), Err(FixtureError::InvalidState));
             assert_eq!(vulnerable.fill([7; 32]), Ok(()));
         }

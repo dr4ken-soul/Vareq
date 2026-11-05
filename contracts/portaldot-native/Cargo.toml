@@ -7,7 +7,10 @@ publish = false
 license = "MIT"
 
 [dependencies]
-ink = { git = "https://github.com/use-ink/ink", tag = "v3.3.1", default-features = false }
+ink_lang = { version = "=3.3.1", default-features = false }
+ink_env = { version = "=3.3.1", default-features = false }
+ink_storage = { version = "=3.3.1", default-features = false }
+ink_primitives = { version = "=3.3.1", default-features = false }
 scale = { package = "parity-scale-codec", version = "3.6.12", default-features = false, features = ["derive"] }
 scale-info = { version = "2.11.6", default-features = false, features = ["derive"] }
 
@@ -16,5 +19,5 @@ path = "lib.rs"
 
 [features]
 default = ["std"]
-std = ["ink/std", "scale/std", "scale-info/std"]
+std = ["ink_lang/std", "ink_env/std", "ink_storage/std", "ink_primitives/std", "scale/std", "scale-info/std"]
 ink-as-dependency = []
