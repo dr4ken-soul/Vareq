@@ -7,7 +7,9 @@ publish = false
 license = "MIT"
 
 [dependencies]
+ink = { package = "ink_lang", version = "=3.3.1", default-features = false }
 ink_lang = { version = "=3.3.1", default-features = false }
+ink_metadata = { version = "=3.3.1", default-features = false }
 ink_env = { version = "=3.3.1", default-features = false }
 ink_storage = { version = "=3.3.1", default-features = false }
 ink_primitives = { version = "=3.3.1", default-features = false }
@@ -19,5 +21,5 @@ path = "lib.rs"
 
 [features]
 default = ["std"]
-std = ["ink_lang/std", "ink_env/std", "ink_storage/std", "ink_primitives/std", "scale/std", "scale-info/std"]
+std = ["ink/std", "ink_lang/std", "ink_metadata/std", "ink_env/std", "ink_storage/std", "ink_primitives/std", "scale/std", "scale-info/std"]
 ink-as-dependency = []

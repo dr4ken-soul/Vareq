@@ -9,7 +9,7 @@ mod vareq_portaldot_native_fixture {
     const MAX_UNITS: u128 = 10;
     const BASE_SEPOLIA_CHAIN_ID: u32 = 84_532;
 
-    #[derive(scale::Encode, scale::Decode, Clone, Debug, PartialEq, Eq, scale_info::TypeInfo)]
+    #[derive(scale::Encode, scale::Decode, ink_storage::traits::SpreadLayout, ink_storage::traits::PackedLayout, Clone, Debug, PartialEq, Eq, scale_info::TypeInfo)]
     #[cfg_attr(feature = "std", derive(ink_storage::traits::StorageLayout))]
     pub struct Transfer {
         pub source_transaction: [u8; 32],
@@ -22,7 +22,7 @@ mod vareq_portaldot_native_fixture {
         pub filled: bool,
     }
 
-    #[derive(scale::Encode, scale::Decode, Clone, Debug, PartialEq, Eq, scale_info::TypeInfo)]
+    #[derive(scale::Encode, scale::Decode, ink_storage::traits::SpreadLayout, ink_storage::traits::PackedLayout, Clone, Debug, PartialEq, Eq, scale_info::TypeInfo)]
     pub enum FixtureError {
         Unauthorized,
         InvalidInput,
