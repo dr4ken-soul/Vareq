@@ -35,9 +35,24 @@ jobs:
         with:
           components: clippy, rust-src
           targets: wasm32-unknown-unknown
-      - run: cargo test --manifest-path contracts/portaldot-native/Cargo.toml
-      - run: cargo install cargo-contract --version 3.2.0 --locked
-      - run: cargo contract build --release --manifest-path contracts/portaldot-native/Cargo.toml
+      - run: cargo +1.85.0 test --manifest-path contracts/portaldot-native/Cargo.toml
+      - name: Install the legacy ink! linter runner
+        run: |
+          cargo +1.85.0 install cargo-dylint --version 4.0.1 --locked
+          cargo +1.85.0 install dylint-link --version 4.0.1 --locked
+      - uses: dtolnay/rust-toolchain@nightly-2022-06-30
+        with:
+          components: llvm-tools-preview, rust-src, rustc-dev
+      - name: Install cargo-contract compatible with ink! 3
+        run: cargo +nightly-2022-06-30 install cargo-contract --version 1.5.0 --locked
+      - uses: dtolnay/rust-toolchain@nightly-2025-02-20
+        with:
+          components: rust-src
+          targets: wasm32-unknown-unknown
+      - name: Install Binaryen for the legacy contract optimizer
+        run: sudo apt-get update && sudo apt-get install --yes binaryen
+      - name: Build Portaldot V3-compatible contract bundle
+        run: cargo +nightly-2025-02-20 contract build --release --skip-linting --manifest-path contracts/portaldot-native/Cargo.toml
       - uses: actions/upload-artifact@v4
         with:
           name: vareq-portaldot-native-bundle
