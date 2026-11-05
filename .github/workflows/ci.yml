@@ -35,12 +35,8 @@ jobs:
         with:
           components: clippy, rust-src
           targets: wasm32-unknown-unknown
-      - name: Install cargo-contract v1.5 lint tools
-        run: |
-          cargo install --locked --version 4.0.1 cargo-dylint
-          cargo install --locked --version 4.0.1 dylint-link
       - run: cargo test --manifest-path contracts/portaldot-native/Cargo.toml
-      - run: cargo install cargo-contract --version 1.5.0 --locked
+      - run: cargo install cargo-contract --version 3.2.0 --locked
       - run: cargo contract build --release --manifest-path contracts/portaldot-native/Cargo.toml
       - uses: actions/upload-artifact@v4
         with:
