@@ -12,8 +12,8 @@ ink_metadata = { version = "=3.3.1", default-features = false }
 ink_env = { version = "=3.3.1", default-features = false }
 ink_storage = { version = "=3.3.1", default-features = false }
 ink_primitives = { version = "=3.3.1", default-features = false }
-scale = { package = "parity-scale-codec", version = "3.6.12", default-features = false, features = ["derive"] }
-scale-info = { version = "2.11.6", default-features = false, features = ["derive"] }
+scale = { package = "parity-scale-codec", version = "=3.1.2", default-features = false, features = ["derive"] }
+scale-info = { version = "=2.1.2", default-features = false, features = ["derive"] }
 
 [lib]
 path = "lib.rs"
