@@ -50,10 +50,9 @@ contract TestnetRoleFixture {
     event OperatorReimbursed(bytes32 indexed transferId, bytes32 indexed fillTransactionHash);
 
     constructor(address user_, address operator_, address attester_) {
-        if (
-            user_ == address(0) || operator_ == address(0) || attester_ == address(0) ||
-            user_ == operator_ || user_ == attester_ || operator_ == attester_
-        ) revert InvalidState();
+        // This valueless test fixture permits shared test-only signers. Reusing one
+        // address collapses the EVM role separation and is not production evidence.
+        if (user_ == address(0) || operator_ == address(0) || attester_ == address(0)) revert InvalidState();
         owner = msg.sender;
         user = user_;
         operator = operator_;

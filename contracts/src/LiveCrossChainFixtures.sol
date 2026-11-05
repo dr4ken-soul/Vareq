@@ -129,7 +129,7 @@ contract TestnetSourceFixture {
         bool patched_
     ) {
         if (
-            operator_ == address(0) || attester_ == address(0) || operator_ == attester_ ||
+            operator_ == address(0) || attester_ == address(0) ||
             destinationChainId_ == 0 || destinationFixture_ == address(0)
         ) revert InvalidState();
         operator = operator_;
@@ -278,7 +278,7 @@ contract TestnetDestinationFixture {
     }
 
     constructor(address operator_, address attester_, uint256 sourceChainId_, bool patched_) {
-        if (operator_ == address(0) || attester_ == address(0) || operator_ == attester_ || sourceChainId_ == 0) {
+        if (operator_ == address(0) || attester_ == address(0) || sourceChainId_ == 0) {
             revert InvalidState();
         }
         owner = msg.sender;

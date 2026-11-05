@@ -151,9 +151,6 @@ async function main() {
   const deployer = privateKeyToAccount(readKey("TESTNET_DEPLOYER_PRIVATE_KEY"));
   const operator = privateKeyToAccount(readKey("OPERATOR_PRIVATE_KEY"));
   const attester = privateKeyToAccount(readKey("ATTESTER_PRIVATE_KEY"));
-  if (new Set([deployer.address.toLowerCase(), operator.address.toLowerCase(), attester.address.toLowerCase()]).size !== 3) {
-    stop("Deployer, operator, and attester must be three distinct test-only EVM accounts.");
-  }
 
   const baseRpc = rpcUrl("base");
   const portaldotRpc = rpcUrl("portaldot");
@@ -175,6 +172,10 @@ async function main() {
   }
   if (baseOperatorBalance === 0n || portaldotOperatorBalance === 0n) {
     stop("The operator needs native test gas on both Base Sepolia and Portaldot V3.");
+  }
+
+  if (deployer.address === operator.address && operator.address === attester.address) {
+    console.log("Using one shared test-only EVM signer for deployer, operator, and attester; role independence is not demonstrated.");
   }
 
   const compiled = await compile();

@@ -53,15 +53,15 @@ The proposal is labelled AI suggested after local validation. It remains unexecu
 
 ## Operator-assisted two-network testnet demo
 
-This demo targets Base Sepolia (84532) as source and Portaldot V3 (420420777) as destination. It uses the connected user's wallet for the source lock/refund, a separate operator account for source authorization/destination fill/source claim, and a separate attester account for off-chain permit/receipt signatures. The operator approves each stage manually. No key is stored in Vercel or used by a server endpoint.
+This demo targets Base Sepolia (84532) as source and Portaldot V3 (420420777) as destination. The connected user's wallet signs the source lock/refund. The operator and EVM attester roles can use separate accounts or the same disposable test-only account; when shared, the demo does not demonstrate independent EVM role control. The operator approves each stage manually. Native Portaldot SS58 operator and attester accounts remain distinct. No key is stored in Vercel or used by a server endpoint.
 
-Use three distinct, disposable EVM accounts. Set `TESTNET_DEPLOYER_PRIVATE_KEY`, `OPERATOR_PRIVATE_KEY`, and `ATTESTER_PRIVATE_KEY` in the ignored local `.env`; the deployer pays deployment gas on both networks and the operator pays action gas on both. The attester only signs and needs no gas. Each EVM key must be `0x` followed by exactly 64 hexadecimal characters. An encrypted Polkadot.js wallet export or SS58 address is not an EVM private key; do not paste either into these fields. Obtain gas through the event's approved testnet funding process and verify both chain balances before broadcasting.
+Set `TESTNET_DEPLOYER_PRIVATE_KEY`, `OPERATOR_PRIVATE_KEY`, and `ATTESTER_PRIVATE_KEY` in the ignored local `.env`. They may all contain the same disposable test-only EVM key for this valueless demo. Shared keys collapse cryptographic separation between those roles, so resulting signatures do not prove independent operator and attester control. The deployer pays deployment gas on both networks and the operator pays action gas on both; a shared signer needs gas for both. Each EVM key must be `0x` followed by exactly 64 hexadecimal characters. An encrypted Polkadot.js wallet export or SS58 address is not an EVM private key; do not paste either into these fields. Obtain gas through the event's approved testnet funding process and verify both chain balances before broadcasting.
 
 Compile/deploy and bind the vulnerable and patched fixture pairs:
 
     bun run testnet:deploy:crosschain
 
-The first command is a read-only preflight: it verifies both RPC chain IDs, checks signer separation and gas balances, and compiles the Solidity fixtures. It sends no transactions. After reviewing the test-only accounts and balances, explicitly broadcast the six deployment/binding transactions:
+The first command is a read-only preflight: it verifies both RPC chain IDs, checks signer configuration and gas balances, and compiles the Solidity fixtures. It sends no transactions. After reviewing the test-only accounts and balances, explicitly broadcast the six deployment/binding transactions:
 
     bun run testnet:deploy:crosschain --broadcast
 
@@ -83,7 +83,7 @@ First run a read-only RPC and Solidity-compilation preflight:
 
     bun run testnet:fixture --network portaldot-v3
 
-After confirming that the three keys are distinct and funding the deployer/user and operator with test gas, explicitly broadcast the five transactions:
+After funding the signer with test gas, explicitly broadcast the five transactions. The three EVM role variables may reuse the same key for this valueless fixture:
 
     bun run testnet:fixture --network portaldot-v3 --broadcast
 
@@ -104,9 +104,9 @@ Create and edit the real local .env file (or copy .env.example). The .env is exc
 | PRIVY_APP_ID, PRIVY_APP_SECRET | Server-side Privy credentials. Never expose them with a VITE_ prefix. |
 | GROQ_API_KEY, GROQ_MODEL | Server-side Groq credentials and the approved model selection. Never expose the key with a VITE_ prefix. |
 | UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN | Server-only shared storage for one-use challenges and atomic proposal quotas. |
-| TESTNET_DEPLOYER_PRIVATE_KEY | Local-only disposable testnet account used as fixture deployer and user. Never add it to Vercel or commit its value. |
-| OPERATOR_PRIVATE_KEY | Local-only separate test account that authorizes the source fill, submits the destination fill and submits the source claim. It needs gas on both chains. |
-| ATTESTER_PRIVATE_KEY | Local-only separate signer that signs the fill permit and observed-fill attestation; it does not need gas for signing. |
+| TESTNET_DEPLOYER_PRIVATE_KEY | Local-only disposable testnet account used for fixture deployment and, in the legacy demo, the user role. Never add it to Vercel or commit its value. |
+| OPERATOR_PRIVATE_KEY | Local-only EVM signer that authorizes and submits operator actions. It may reuse the deployer key for the test-only demo and needs gas on both chains. |
+| ATTESTER_PRIVATE_KEY | Local-only EVM signer for permit and observed-fill signatures. It may reuse the same test-only key; this removes independent attester separation. |
 | PORTALDOT_NATIVE_OPERATOR_KEYSTORE_PATH, PORTALDOT_NATIVE_OPERATOR_KEYSTORE_PASSWORD | Local-only path and password for an encrypted native Polkadot operator wallet export. The wallet file stays outside the repository; the password is used only by the local command. The operator pays native deployment/fill fees. |
 | PORTALDOT_NATIVE_ATTESTER_KEYSTORE_PATH, PORTALDOT_NATIVE_ATTESTER_KEYSTORE_PASSWORD | Local-only path and password for a separate encrypted native Polkadot attester wallet export. It must be a different SS58 account from the operator. The attester pays native attestation fees. |
 | PORTALDOT_NATIVE_FIXTURE_PATCHED_ADDRESS, VITE_PORTALDOT_NATIVE_FIXTURE_PATCHED_ADDRESS | Patched native contract address written locally after deployment; the VITE value is public and contains no secret. |

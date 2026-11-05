@@ -143,22 +143,13 @@ async function main() {
   console.log("This valueless, single-chain fixture does not transfer real assets or verify another chain.");
 
   if (!broadcast) {
-    console.log("Read-only preflight complete. Broadcasting requires three distinct test-only keys; deployer/user and operator also need gas.");
+    console.log("Read-only preflight complete. Shared test-only keys are allowed; the signer paying deployment and operator transactions needs gas.");
     return;
   }
 
   const deployer = privateKeyToAccount(readPrivateKey("TESTNET_DEPLOYER_PRIVATE_KEY"));
   const operator = privateKeyToAccount(readPrivateKey("OPERATOR_PRIVATE_KEY"));
   const attester = privateKeyToAccount(readPrivateKey("ATTESTER_PRIVATE_KEY"));
-  const distinctRoles = new Set([
-    deployer.address.toLowerCase(),
-    operator.address.toLowerCase(),
-    attester.address.toLowerCase(),
-  ]);
-  if (distinctRoles.size !== 3) {
-    fail("deployer/user, operator, and attester must be three distinct test-only accounts");
-  }
-
   const [deployerBalance, operatorBalance] = await Promise.all([
     publicClient.getBalance({ address: deployer.address }),
     publicClient.getBalance({ address: operator.address }),
