@@ -55,7 +55,7 @@ jobs:
       - name: Install Binaryen for the legacy contract optimizer
         run: sudo apt-get update && sudo apt-get install --yes binaryen
       - name: Build Portaldot V3-compatible contract bundle
-        run: cargo +nightly-2025-02-20 contract build --release --skip-linting --manifest-path contracts/portaldot-native/Cargo.toml
+        run: cargo +nightly-2025-02-20 contract build --release --skip-linting --features std --manifest-path contracts/portaldot-native/Cargo.toml
       - uses: actions/upload-artifact@v4
         with:
           name: vareq-portaldot-native-bundle
