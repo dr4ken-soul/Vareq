@@ -40,15 +40,12 @@ jobs:
         run: |
           cargo +1.85.0 install cargo-dylint --version 4.0.1 --locked
           cargo +1.85.0 install dylint-link --version 4.0.1 --locked
-      - uses: dtolnay/rust-toolchain@nightly-2022-06-30
-        with:
-          components: llvm-tools-preview, rust-src, rustc-dev
+      - name: Install the legacy ink! builder toolchain
+        run: rustup toolchain install nightly-2022-06-30 --profile minimal --component llvm-tools-preview --component rust-src --component rustc-dev
       - name: Install cargo-contract compatible with ink! 3
         run: cargo +nightly-2022-06-30 install cargo-contract --version 1.5.0 --locked
-      - uses: dtolnay/rust-toolchain@nightly-2025-02-20
-        with:
-          components: rust-src
-          targets: wasm32-unknown-unknown
+      - name: Install the wasm build toolchain
+        run: rustup toolchain install nightly-2025-02-20 --profile minimal --component rust-src --target wasm32-unknown-unknown
       - name: Install Binaryen for the legacy contract optimizer
         run: sudo apt-get update && sudo apt-get install --yes binaryen
       - name: Build Portaldot V3-compatible contract bundle
